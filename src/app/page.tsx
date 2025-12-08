@@ -6,6 +6,7 @@ import { VideoRoom } from "@/components/video-room";
 
 export default function Home() {
   const [token, setToken] = useState<string | null>(null);
+  const [roomName, setRoomName] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleJoin = async (room: string, username: string) => {
@@ -23,6 +24,7 @@ export default function Home() {
 
       const { token } = await response.json();
       setToken(token);
+      setRoomName(room);
     } catch (error) {
       console.error("Error joining room:", error);
       alert("Failed to join room. Please try again.");
@@ -33,10 +35,11 @@ export default function Home() {
 
   const handleDisconnect = () => {
     setToken(null);
+    setRoomName("");
   };
 
   if (token) {
-    return <VideoRoom token={token} onDisconnect={handleDisconnect} />;
+    return <VideoRoom token={token} roomName={roomName} onDisconnect={handleDisconnect} />;
   }
 
   return <JoinForm onJoin={handleJoin} isLoading={isLoading} />;
