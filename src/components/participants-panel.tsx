@@ -9,11 +9,22 @@ import { Button } from "@/components/ui/button";
 
 interface ParticipantsPanelProps {
   roomName?: string;
+  raisedHands?: Map<string, number>;
 }
 
-export function ParticipantsPanel({ roomName }: ParticipantsPanelProps) {
+export function ParticipantsPanel({ roomName, raisedHands = new Map() }: ParticipantsPanelProps) {
   const participants = useParticipants();
   const { localParticipant } = useLocalParticipant();
+
+  // Sort participants: raised hands first (by timestamp), then others
+  const sortedParticipants = [...participants].sort((a, b) => {
+    const aHand = raisedHands.get(a.identity);
+    const bHand = raisedHands.get(b.identity);
+    if (aHand && bHand) return aHand - bHand; // Earlier hand raise first
+    if (aHand) return -1;
+    if (bHand) return 1;
+    return 0;
+  });
   const [copied, setCopied] = useState(false);
 
   const isHost = localParticipant.identity === participants[0]?.identity;
@@ -91,12 +102,13 @@ export function ParticipantsPanel({ roomName }: ParticipantsPanelProps) {
 
       {/* Participants List */}
       <div className="flex-1 overflow-y-auto p-3 space-y-1">
-        {participants.map((participant) => {
+        {sortedParticipants.map((participant) => {
           const isMuted = !participant.isMicrophoneEnabled;
           const isVideoOff = !participant.isCameraEnabled;
           const isLocal = participant === localParticipant;
           const isFirstParticipant = participant.identity === participants[0]?.identity;
           const isSpeaking = participant.isSpeaking;
+          const hasRaisedHand = raisedHands.has(participant.identity);
 
           return (
             <div
@@ -135,6 +147,14 @@ export function ParticipantsPanel({ roomName }: ParticipantsPanelProps) {
                     {isFirstParticipant && (
                       <span className="bg-amber-500/20 text-amber-400 text-[10px] px-1.5 py-0.5 rounded font-medium">
                         Host
+                      </span>
+                    )}
+                    {hasRaisedHand && (
+                      <span className="bg-yellow-500/20 text-yellow-400 text-[10px] px-1.5 py-0.5 rounded font-medium flex items-center gap-0.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                          <path d="M18 8.5a1.5 1.5 0 0 0-3 0v2.5h-1V6.5a1.5 1.5 0 0 0-3 0v4.5h-1V5.5a1.5 1.5 0 0 0-3 0v5.5h-1V8.5a1.5 1.5 0 0 0-3 0v8c0 4.14 3.36 7.5 7.5 7.5s7.5-3.36 7.5-7.5v-8z"/>
+                        </svg>
+                        Hand
                       </span>
                     )}
                   </div>

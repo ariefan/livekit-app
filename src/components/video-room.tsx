@@ -26,6 +26,10 @@ import {
   PhoneOff,
   ChevronDown,
   Check,
+  Hand,
+  Sparkles,
+  Circle,
+  Square,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
@@ -37,6 +41,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChatPanel } from "./chat-panel";
 import { ParticipantsPanel } from "./participants-panel";
+import { FocusLayout } from "./focus-layout";
+import { CaptionsButton, CaptionsOverlay, useCaptions } from "./captions";
+import { AIAssistantPanel } from "./ai-assistant-panel";
 
 interface VideoRoomProps {
   token: string;
@@ -44,7 +51,13 @@ interface VideoRoomProps {
   onDisconnect: () => void;
 }
 
-function VideoGrid() {
+interface VideoGridProps {
+  focusedIdentity: string | null;
+  onFocus: (identity: string) => void;
+  onUnfocus: () => void;
+}
+
+function VideoGrid({ focusedIdentity, onFocus, onUnfocus }: VideoGridProps) {
   const tracks = useTracks(
     [
       { source: Track.Source.Camera, withPlaceholder: true },
@@ -53,21 +66,57 @@ function VideoGrid() {
     { onlySubscribed: false }
   );
 
+  // If a participant is focused, show focus layout
+  if (focusedIdentity) {
+    return (
+      <FocusLayout
+        tracks={tracks}
+        focusedIdentity={focusedIdentity}
+        onUnfocus={onUnfocus}
+        onFocus={onFocus}
+      />
+    );
+  }
+
+  // Regular grid layout with click-to-focus
   return (
-    <GridLayout tracks={tracks} className="h-full">
-      <ParticipantTile />
+    <GridLayout
+      tracks={tracks}
+      className="h-full [&_.lk-participant-tile]:cursor-pointer"
+    >
+      <ParticipantTile
+        onClick={(event) => {
+          // Get participant identity from the clicked tile
+          const tile = (event.target as HTMLElement).closest("[data-lk-participant-name]");
+          const identity = tile?.getAttribute("data-lk-participant-name");
+          if (identity) {
+            onFocus(identity);
+          }
+        }}
+      />
     </GridLayout>
   );
 }
 
-type PanelType = "chat" | "participants" | null;
+type PanelType = "chat" | "participants" | "ai" | null;
 
 function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => void }) {
   const [activePanel, setActivePanel] = useState<PanelType>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [lastMessageCount, setLastMessageCount] = useState(0);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [raisedHands, setRaisedHands] = useState<Map<string, number>>(new Map());
+  const [isHandRaised, setIsHandRaised] = useState(false);
+  const [focusedIdentity, setFocusedIdentity] = useState<string | null>(null);
+  const [meetingTranscript, setMeetingTranscript] = useState<string>("");
+  const [isRecording, setIsRecording] = useState(false);
+  const [egressId, setEgressId] = useState<string | null>(null);
+  const [recordingError, setRecordingError] = useState<string | null>(null);
   const { localParticipant } = useLocalParticipant();
+
+  const { isEnabled: captionsEnabled, captions, toggleCaptions, isSupported: captionsSupported } = useCaptions(
+    (transcript) => setMeetingTranscript(transcript)
+  );
   const participants = useParticipants();
   const { chatMessages } = useChat();
 
@@ -102,6 +151,22 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
       if (data.type === "mute-request" && data.target === localParticipant.identity) {
         localParticipant.setMicrophoneEnabled(false);
       }
+
+      if (data.type === "hand-raise") {
+        setRaisedHands((prev) => {
+          const next = new Map(prev);
+          if (data.raised) {
+            next.set(data.participant, data.timestamp);
+          } else {
+            next.delete(data.participant);
+          }
+          return next;
+        });
+      }
+
+      if (data.type === "recording-status") {
+        setIsRecording(data.isRecording);
+      }
     } catch (e) {
       // Not a JSON message, ignore
     }
@@ -132,6 +197,34 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
     }
   };
 
+  const toggleHandRaise = () => {
+    const newRaised = !isHandRaised;
+    setIsHandRaised(newRaised);
+
+    // Update local state immediately
+    setRaisedHands((prev) => {
+      const next = new Map(prev);
+      if (newRaised) {
+        next.set(localParticipant.identity, Date.now());
+      } else {
+        next.delete(localParticipant.identity);
+      }
+      return next;
+    });
+
+    // Broadcast to others
+    const encoder = new TextEncoder();
+    const data = encoder.encode(
+      JSON.stringify({
+        type: "hand-raise",
+        participant: localParticipant.identity,
+        raised: newRaised,
+        timestamp: Date.now(),
+      })
+    );
+    localParticipant.publishData(data, { reliable: true });
+  };
+
   const selectAudioDevice = async (deviceId: string) => {
     setSelectedAudioDevice(deviceId);
     await localParticipant.setMicrophoneEnabled(true, { deviceId });
@@ -142,20 +235,89 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
     await localParticipant.setCameraEnabled(true, { deviceId });
   };
 
+  const toggleRecording = async () => {
+    setRecordingError(null);
+
+    try {
+      if (isRecording && egressId) {
+        // Stop recording
+        const response = await fetch("/api/recording", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "stop", egressId }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || "Failed to stop recording");
+        }
+
+        setIsRecording(false);
+        setEgressId(null);
+
+        // Broadcast recording stopped to all participants
+        const encoder = new TextEncoder();
+        const data = encoder.encode(
+          JSON.stringify({ type: "recording-status", isRecording: false })
+        );
+        localParticipant.publishData(data, { reliable: true });
+      } else {
+        // Start recording
+        const response = await fetch("/api/recording", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "start", roomName }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to start recording");
+        }
+
+        setIsRecording(true);
+        setEgressId(data.egressId);
+
+        // Broadcast recording started to all participants
+        const encoder = new TextEncoder();
+        const broadcastData = encoder.encode(
+          JSON.stringify({ type: "recording-status", isRecording: true })
+        );
+        localParticipant.publishData(broadcastData, { reliable: true });
+      }
+    } catch (error) {
+      console.error("Recording error:", error);
+      setRecordingError(error instanceof Error ? error.message : "Recording failed");
+    }
+  };
+
   return (
     <div className="flex h-screen overflow-hidden bg-zinc-950">
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-h-0 relative">
         {/* Room Name Overlay */}
-        <div className="absolute top-4 left-4 z-10">
+        <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
           <div className="bg-black/50 backdrop-blur-md px-4 py-2 rounded-lg">
             <span className="text-white/90 text-sm font-medium">{roomName}</span>
           </div>
+          {isRecording && (
+            <div className="bg-red-600 backdrop-blur-md px-3 py-2 rounded-lg flex items-center gap-2">
+              <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+              <span className="text-white text-sm font-medium">Recording</span>
+            </div>
+          )}
         </div>
 
         {/* Video Grid */}
-        <div className="flex-1 min-h-0">
-          <VideoGrid />
+        <div className="flex-1 min-h-0 relative">
+          <VideoGrid
+            focusedIdentity={focusedIdentity}
+            onFocus={setFocusedIdentity}
+            onUnfocus={() => setFocusedIdentity(null)}
+          />
+
+          {/* Captions Overlay */}
+          {captionsEnabled && <CaptionsOverlay captions={captions} />}
         </div>
 
         {/* Bottom Control Bar */}
@@ -267,6 +429,48 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
               <MonitorUp className="h-5 w-5" />
             </Button>
 
+            {/* Record */}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggleRecording}
+              className={cn(
+                "relative",
+                isRecording
+                  ? "border-red-500/50 bg-red-600 hover:bg-red-700 text-white"
+                  : "border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white"
+              )}
+              title={isRecording ? "Stop Recording" : "Start Recording"}
+            >
+              {isRecording ? (
+                <Square className="h-4 w-4" />
+              ) : (
+                <Circle className="h-5 w-5 fill-current" />
+              )}
+              {isRecording && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+              )}
+            </Button>
+
+            {/* Hand Raise */}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggleHandRaise}
+              className={
+                isHandRaised
+                  ? "border-yellow-500/50 bg-yellow-500 hover:bg-yellow-600 text-black"
+                  : "border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white"
+              }
+            >
+              <Hand className="h-5 w-5" />
+            </Button>
+
+            {/* Captions */}
+            {captionsSupported && (
+              <CaptionsButton isActive={captionsEnabled} onClick={toggleCaptions} />
+            )}
+
             <div className="w-px h-8 bg-zinc-700" />
 
             {/* Chat Toggle */}
@@ -307,6 +511,20 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
               </span>
             </Button>
 
+            {/* AI Assistant Toggle */}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => togglePanel("ai")}
+              className={cn(
+                activePanel === "ai"
+                  ? "border-purple-500/50 bg-purple-600 hover:bg-purple-700 text-white"
+                  : "border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white"
+              )}
+            >
+              <Sparkles className="h-5 w-5" />
+            </Button>
+
             <div className="w-px h-8 bg-zinc-700" />
 
             {/* Leave Button */}
@@ -326,7 +544,8 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
       {activePanel && (
         <aside className="w-80 flex-shrink-0 border-l border-zinc-800 flex flex-col bg-zinc-900 overflow-hidden">
           {activePanel === "chat" && <ChatPanel />}
-          {activePanel === "participants" && <ParticipantsPanel roomName={roomName} />}
+          {activePanel === "participants" && <ParticipantsPanel roomName={roomName} raisedHands={raisedHands} />}
+          {activePanel === "ai" && <AIAssistantPanel transcript={meetingTranscript} />}
         </aside>
       )}
     </div>
