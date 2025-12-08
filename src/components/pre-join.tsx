@@ -149,9 +149,11 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
-      if (audioContextRef.current) {
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
         audioContextRef.current.close();
+        audioContextRef.current = null;
       }
       if (audioTrack) {
         audioTrack.stop();
@@ -164,8 +166,14 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
     return () => {
       if (videoTrack) videoTrack.stop();
       if (audioTrack) audioTrack.stop();
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-      if (audioContextRef.current) audioContextRef.current.close();
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
     };
   }, []);
 
@@ -173,8 +181,14 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
     // Stop preview tracks before joining
     if (videoTrack) videoTrack.stop();
     if (audioTrack) audioTrack.stop();
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    if (audioContextRef.current) audioContextRef.current.close();
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
 
     onJoin(isAudioEnabled, isVideoEnabled);
   };
