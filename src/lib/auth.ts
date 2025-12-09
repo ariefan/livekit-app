@@ -7,6 +7,12 @@ import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 
+// Helper to check if a string is a valid UUID
+function isUUID(str: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -87,18 +93,32 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async jwt({ token, user, account }) {
-      // For OAuth (Google), look up the user by email to get our database UUID
-      if (account?.provider === "google" && token.email) {
+      // On initial sign-in, user object is available
+      if (user) {
+        // For OAuth providers, look up the database UUID by email
+        if (account?.provider === "google" && user.email) {
+          const dbUser = await db.query.users.findFirst({
+            where: eq(users.email, user.email),
+          });
+          if (dbUser) {
+            token.id = dbUser.id;
+          }
+        } else {
+          // For credentials provider, user.id is already our UUID
+          token.id = user.id;
+        }
+      }
+      
+      // On subsequent requests, if token.id is not a valid UUID, look it up
+      if (token.id && !isUUID(token.id as string) && token.email) {
         const dbUser = await db.query.users.findFirst({
           where: eq(users.email, token.email as string),
         });
         if (dbUser) {
           token.id = dbUser.id;
         }
-      } else if (user) {
-        // For credentials provider, user.id is already our UUID
-        token.id = user.id;
       }
+      
       return token;
     },
     async session({ session, token }) {
