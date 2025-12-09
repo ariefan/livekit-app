@@ -36,9 +36,10 @@ export async function GET(
     }
 
     // Generate presigned URL for download
+    const endpoint = process.env.S3_ENDPOINT;
     const s3Client = new S3Client({
       region: "auto",
-      endpoint: process.env.S3_ENDPOINT,
+      endpoint: endpoint?.startsWith("http") ? endpoint : `https://${endpoint}`,
       credentials: {
         accessKeyId: process.env.S3_ACCESS_KEY_ID!,
         secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,

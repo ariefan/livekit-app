@@ -27,9 +27,10 @@ export default async function RecordingPage({ params }: RecordingPageProps) {
   // Generate presigned URL for download
   let downloadUrl = "";
   try {
+    const endpoint = process.env.S3_ENDPOINT;
     const s3Client = new S3Client({
       region: "auto",
-      endpoint: process.env.S3_ENDPOINT,
+      endpoint: endpoint?.startsWith("http") ? endpoint : `https://${endpoint}`,
       credentials: {
         accessKeyId: process.env.S3_ACCESS_KEY_ID!,
         secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
@@ -63,11 +64,11 @@ export default async function RecordingPage({ params }: RecordingPageProps) {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
-      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
-        <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+    <main className="min-h-screen flex items-center justify-center p-4 bg-background">
+      <div className="w-full max-w-md bg-card rounded-lg border p-8 text-center">
+        <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-primary/10 flex items-center justify-center">
           <svg
-            className="w-8 h-8 text-blue-600"
+            className="w-8 h-8 text-primary"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -82,17 +83,17 @@ export default async function RecordingPage({ params }: RecordingPageProps) {
         </div>
 
         <h1 className="text-2xl font-bold mb-2">{recording.roomName}</h1>
-        <p className="text-gray-500 dark:text-gray-400 mb-6">
+        <p className="text-muted-foreground mb-6">
           Recording from {new Date(recording.createdAt).toLocaleDateString()}
         </p>
 
         <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
-          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-            <div className="text-gray-500 dark:text-gray-400">Duration</div>
+          <div className="bg-muted rounded-lg p-3">
+            <div className="text-muted-foreground">Duration</div>
             <div className="font-medium">{formatDuration(recording.duration)}</div>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-            <div className="text-gray-500 dark:text-gray-400">Size</div>
+          <div className="bg-muted rounded-lg p-3">
+            <div className="text-muted-foreground">Size</div>
             <div className="font-medium">{formatSize(recording.size)}</div>
           </div>
         </div>
@@ -100,15 +101,15 @@ export default async function RecordingPage({ params }: RecordingPageProps) {
         {downloadUrl ? (
           <a
             href={downloadUrl}
-            className="inline-block w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition"
+            className="inline-block w-full py-3 px-4 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition"
           >
             Download Recording
           </a>
         ) : (
-          <div className="text-red-500">Failed to generate download link</div>
+          <div className="text-destructive">Failed to generate download link</div>
         )}
 
-        <p className="mt-4 text-xs text-gray-400 dark:text-gray-500">
+        <p className="mt-4 text-xs text-muted-foreground">
           This link expires on{" "}
           {recording.shareExpires?.toLocaleDateString() || "soon"}
         </p>
