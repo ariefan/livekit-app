@@ -16,6 +16,10 @@ COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Build-time env vars for Next.js public variables
+ARG NEXT_PUBLIC_LIVEKIT_URL=wss://livekit-server.technosmart.id
+ENV NEXT_PUBLIC_LIVEKIT_URL=${NEXT_PUBLIC_LIVEKIT_URL}
+
 RUN npm run build
 
 # Production image
