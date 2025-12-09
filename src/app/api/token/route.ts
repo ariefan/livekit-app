@@ -1,9 +1,13 @@
 import { AccessToken } from "livekit-server-sdk";
 import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/db";
+import { rooms } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 
 export async function POST(request: NextRequest) {
   try {
-    const { room, username } = await request.json();
+    const { room, username, roomPassword } = await request.json();
 
     if (!room || !username) {
       return NextResponse.json(
@@ -20,6 +24,29 @@ export async function POST(request: NextRequest) {
         { error: "Server misconfigured" },
         { status: 500 }
       );
+    }
+
+    // Check if room exists in database and validate password if needed
+    const dbRoom = await db.query.rooms.findFirst({
+      where: eq(rooms.slug, room),
+    });
+
+    // If room exists in DB and has a password, validate it
+    if (dbRoom && dbRoom.password) {
+      if (!roomPassword) {
+        return NextResponse.json(
+          { error: "Room password is required" },
+          { status: 401 }
+        );
+      }
+
+      const isValidPassword = await bcrypt.compare(roomPassword, dbRoom.password);
+      if (!isValidPassword) {
+        return NextResponse.json(
+          { error: "Invalid room password" },
+          { status: 401 }
+        );
+      }
     }
 
     const at = new AccessToken(apiKey, apiSecret, {

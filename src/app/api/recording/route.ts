@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { EgressClient, EncodedFileOutput, S3Upload, EncodedFileType } from "livekit-server-sdk";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { db } from "@/db";
+import { recordings, rooms } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { v4 as uuidv4 } from "uuid";
 
-// Create Egress client
 function getEgressClient() {
   const livekitUrl = process.env.LIVEKIT_URL || process.env.NEXT_PUBLIC_LIVEKIT_URL;
   const apiKey = process.env.LIVEKIT_API_KEY;
@@ -14,7 +19,6 @@ function getEgressClient() {
   return new EgressClient(livekitUrl, apiKey, apiSecret);
 }
 
-// Get S3 configuration
 function getS3Config(): S3Upload {
   const endpoint = process.env.S3_ENDPOINT;
   const accessKey = process.env.S3_ACCESS_KEY_ID;
@@ -32,7 +36,7 @@ function getS3Config(): S3Upload {
     bucket,
     region,
     endpoint: `https://${endpoint}`,
-    forcePathStyle: true, // Required for S3-compatible services like iDrive E2
+    forcePathStyle: true,
   });
 }
 
@@ -49,6 +53,24 @@ export async function POST(request: NextRequest) {
     if (action === "start") {
       if (!roomName) {
         return NextResponse.json({ error: "Room name is required" }, { status: 400 });
+      }
+
+      // Get session to determine owner
+      const session = await getServerSession(authOptions);
+
+      // Find room to get owner
+      const room = await db.query.rooms.findFirst({
+        where: eq(rooms.slug, roomName),
+      });
+
+      // Determine owner: session user, room owner, or null
+      const ownerId = session?.user.id || room?.ownerId || null;
+
+      if (!ownerId) {
+        return NextResponse.json(
+          { error: "Must be logged in to start recording" },
+          { status: 401 }
+        );
       }
 
       const s3Config = getS3Config();
@@ -74,6 +96,17 @@ export async function POST(request: NextRequest) {
         }
       );
 
+      // Save recording to database
+      await db.insert(recordings).values({
+        id: uuidv4(),
+        roomId: room?.id || null,
+        ownerId: ownerId,
+        egressId: egress.egressId,
+        roomName: roomName,
+        s3Key: filepath,
+        status: "recording",
+      });
+
       return NextResponse.json({
         success: true,
         egressId: egress.egressId,
@@ -87,6 +120,15 @@ export async function POST(request: NextRequest) {
       }
 
       await egressClient.stopEgress(egressId);
+
+      // Update recording status
+      await db
+        .update(recordings)
+        .set({
+          status: "completed",
+          updatedAt: new Date(),
+        })
+        .where(eq(recordings.egressId, egressId));
 
       return NextResponse.json({ success: true });
     }
