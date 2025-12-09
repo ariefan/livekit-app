@@ -86,8 +86,17 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async jwt({ token, user }) {
-      if (user) {
+    async jwt({ token, user, account }) {
+      // For OAuth (Google), look up the user by email to get our database UUID
+      if (account?.provider === "google" && token.email) {
+        const dbUser = await db.query.users.findFirst({
+          where: eq(users.email, token.email as string),
+        });
+        if (dbUser) {
+          token.id = dbUser.id;
+        }
+      } else if (user) {
+        // For credentials provider, user.id is already our UUID
         token.id = user.id;
       }
       return token;
