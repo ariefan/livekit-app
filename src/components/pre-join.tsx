@@ -202,11 +202,11 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
   };
 
   return (
-    <div className="h-screen overflow-hidden flex items-center justify-center bg-zinc-950 p-4">
-      <div className="w-full max-w-2xl">
+    <div className="h-screen overflow-auto flex items-center justify-center bg-zinc-950 p-4">
+      <div className="w-full max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-white">Ready to join?</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Ready to join?</h1>
           <p className="text-zinc-500 text-sm mt-1">
             Check your camera and microphone before joining <span className="text-zinc-300 font-medium">{roomName}</span>
           </p>
@@ -288,7 +288,7 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
             )}
 
             {/* Device selectors */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm text-zinc-400">Camera</label>
                 <Select value={selectedVideoDevice} onValueChange={setSelectedVideoDevice}>

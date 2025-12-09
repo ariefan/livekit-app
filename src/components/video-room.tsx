@@ -296,7 +296,7 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-h-0 relative">
         {/* Room Name Overlay */}
-        <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
+        <div className="absolute top-2 left-2 md:top-4 md:left-4 z-10 flex items-center gap-2">
           <div className="bg-black/50 backdrop-blur-md px-4 py-2 rounded-lg">
             <span className="text-white/90 text-sm font-medium">{roomName}</span>
           </div>
@@ -542,7 +542,7 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
 
       {/* Side Panel */}
       {activePanel && (
-        <aside className="w-80 flex-shrink-0 border-l border-zinc-800 flex flex-col bg-zinc-900 overflow-hidden">
+        <aside className="hidden md:flex w-80 flex-shrink-0 border-l border-zinc-800 flex-col bg-zinc-900 overflow-hidden">
           {activePanel === "chat" && <ChatPanel />}
           {activePanel === "participants" && <ParticipantsPanel roomName={roomName} raisedHands={raisedHands} />}
           {activePanel === "ai" && <AIAssistantPanel transcript={meetingTranscript} />}
