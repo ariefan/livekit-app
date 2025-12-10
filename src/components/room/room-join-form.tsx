@@ -28,19 +28,17 @@ export function RoomJoinForm({ room, user, isOwner }: RoomJoinFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [token, setToken] = useState<string | null>(null);
 
-  // If already joined, show video room (full screen, no padding)
+  // If already joined, show video room
   if (token) {
     return (
-      <div className="fixed inset-0 z-50">
-        <VideoRoom
-          token={token}
-          roomName={room.slug}
-          onDisconnect={() => {
-            setToken(null);
-            window.location.href = "/dashboard";
-          }}
-        />
-      </div>
+      <VideoRoom
+        token={token}
+        roomName={room.slug}
+        onDisconnect={() => {
+          setToken(null);
+          window.location.href = "/dashboard";
+        }}
+      />
     );
   }
 
@@ -88,16 +86,16 @@ export function RoomJoinForm({ room, user, isOwner }: RoomJoinFormProps) {
     new Date(room.scheduledAt) > new Date();
 
   return (
-    <div className="w-full max-w-md bg-card rounded-lg border p-8">
+    <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
       <div className="text-center mb-6">
         <h1 className="text-2xl font-bold">{room.name}</h1>
         {isScheduledFuture && (
-          <p className="text-sm text-muted-foreground mt-2">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
             Scheduled for {new Date(room.scheduledAt!).toLocaleString()}
           </p>
         )}
         {isOwner && (
-          <span className="inline-block mt-2 px-3 py-1 text-xs bg-primary/10 text-primary rounded-full">
+          <span className="inline-block mt-2 px-3 py-1 text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 rounded-full">
             You are the host
           </span>
         )}
@@ -105,7 +103,7 @@ export function RoomJoinForm({ room, user, isOwner }: RoomJoinFormProps) {
 
       <form onSubmit={handleJoin} className="space-y-4">
         {error && (
-          <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+          <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-600 dark:text-red-400">
             {error}
           </div>
         )}
@@ -119,15 +117,15 @@ export function RoomJoinForm({ room, user, isOwner }: RoomJoinFormProps) {
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
               placeholder="Enter your name"
-              className="w-full px-4 py-3 rounded-lg border bg-background focus:ring-2 focus:ring-ring focus:border-transparent outline-none transition"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
             />
           </div>
         )}
 
         {/* Show authenticated user info */}
         {user && (
-          <div className="px-4 py-3 bg-muted rounded-lg">
-            <div className="text-sm text-muted-foreground">
+          <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
               Joining as
             </div>
             <div className="font-medium">{user.name || user.email}</div>
@@ -145,7 +143,7 @@ export function RoomJoinForm({ room, user, isOwner }: RoomJoinFormProps) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter room password"
-              className="w-full px-4 py-3 rounded-lg border bg-background focus:ring-2 focus:ring-ring focus:border-transparent outline-none transition"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
             />
           </div>
         )}
@@ -153,13 +151,13 @@ export function RoomJoinForm({ room, user, isOwner }: RoomJoinFormProps) {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-3 px-4 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground font-medium rounded-lg transition"
+          className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition"
         >
           {isLoading ? "Joining..." : "Join Room"}
         </button>
       </form>
 
-      <div className="mt-6 text-center text-sm text-muted-foreground">
+      <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
         Room code: <span className="font-mono">{room.slug}</span>
       </div>
     </div>
