@@ -119,7 +119,37 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Egress ID is required" }, { status: 400 });
       }
 
-      await egressClient.stopEgress(egressId);
+      // Check egress status first before trying to stop
+      try {
+        const egresses = await egressClient.listEgress({ egressId });
+        const egress = egresses[0];
+
+        // EgressStatus: EGRESS_COMPLETE = 4, EGRESS_FAILED = 5
+        if (!egress || egress.status >= 4) {
+          // Already completed or failed - just update database
+          const newStatus = !egress || egress.status === 5 ? "failed" : "completed";
+          await db
+            .update(recordings)
+            .set({
+              status: newStatus,
+              updatedAt: new Date(),
+            })
+            .where(eq(recordings.egressId, egressId));
+
+          return NextResponse.json({ success: true, alreadyCompleted: true });
+        }
+
+        // Still active - stop it
+        await egressClient.stopEgress(egressId);
+      } catch (e) {
+        // If listEgress fails, try to stop anyway and update DB
+        console.error("Error checking egress status:", e);
+        try {
+          await egressClient.stopEgress(egressId);
+        } catch {
+          // If stop also fails, just update database
+        }
+      }
 
       // Update recording status
       await db
