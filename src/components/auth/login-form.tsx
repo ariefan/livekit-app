@@ -99,7 +99,7 @@ export function LoginForm() {
           <div className="w-full border-t"></div>
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-background text-muted-foreground">
+          <span className="px-2 text-muted-foreground">
             Or continue with
           </span>
         </div>
