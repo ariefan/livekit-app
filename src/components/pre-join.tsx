@@ -22,8 +22,6 @@ interface PreJoinProps {
 
 export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJoinProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [videoTrack, setVideoTrack] = useState<LocalVideoTrack | null>(null);
-  const [audioTrack, setAudioTrack] = useState<LocalAudioTrack | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
@@ -36,6 +34,8 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const videoTrackRef = useRef<LocalVideoTrack | null>(null);
+  const audioTrackRef = useRef<LocalAudioTrack | null>(null);
 
   // Get device list
   useEffect(() => {
@@ -64,22 +64,21 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
   // Create video track
   useEffect(() => {
     if (!selectedVideoDevice || !isVideoEnabled) {
-      if (videoTrack) {
-        videoTrack.stop();
-        setVideoTrack(null);
-      }
       return;
     }
 
+    let isCancelled = false;
+
     const createVideoTrack = async () => {
       try {
-        // Stop existing track
-        if (videoTrack) {
-          videoTrack.stop();
+        const track = await createLocalVideoTrack({ deviceId: selectedVideoDevice });
+
+        if (isCancelled) {
+          track.stop();
+          return;
         }
 
-        const track = await createLocalVideoTrack({ deviceId: selectedVideoDevice });
-        setVideoTrack(track);
+        videoTrackRef.current = track;
 
         if (videoRef.current) {
           track.attach(videoRef.current);
@@ -92,8 +91,10 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
     createVideoTrack();
 
     return () => {
-      if (videoTrack) {
-        videoTrack.stop();
+      isCancelled = true;
+      if (videoTrackRef.current) {
+        videoTrackRef.current.stop();
+        videoTrackRef.current = null;
       }
     };
   }, [selectedVideoDevice, isVideoEnabled]);
@@ -101,22 +102,21 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
   // Create audio track and analyzer
   useEffect(() => {
     if (!selectedAudioDevice || !isAudioEnabled) {
-      if (audioTrack) {
-        audioTrack.stop();
-        setAudioTrack(null);
-      }
       return;
     }
 
+    let isCancelled = false;
+
     const createAudioTrackAndAnalyzer = async () => {
       try {
-        // Stop existing track
-        if (audioTrack) {
-          audioTrack.stop();
+        const track = await createLocalAudioTrack({ deviceId: selectedAudioDevice });
+
+        if (isCancelled) {
+          track.stop();
+          return;
         }
 
-        const track = await createLocalAudioTrack({ deviceId: selectedAudioDevice });
-        setAudioTrack(track);
+        audioTrackRef.current = track;
 
         // Create audio context for level metering
         audioContextRef.current = new AudioContext();
@@ -147,6 +147,7 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
     createAudioTrackAndAnalyzer();
 
     return () => {
+      isCancelled = true;
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
@@ -155,8 +156,9 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
         audioContextRef.current.close();
         audioContextRef.current = null;
       }
-      if (audioTrack) {
-        audioTrack.stop();
+      if (audioTrackRef.current) {
+        audioTrackRef.current.stop();
+        audioTrackRef.current = null;
       }
     };
   }, [selectedAudioDevice, isAudioEnabled]);
@@ -164,8 +166,8 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (videoTrack) videoTrack.stop();
-      if (audioTrack) audioTrack.stop();
+      if (videoTrackRef.current) videoTrackRef.current.stop();
+      if (audioTrackRef.current) audioTrackRef.current.stop();
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
@@ -179,8 +181,8 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
 
   const handleJoin = () => {
     // Stop preview tracks before joining
-    if (videoTrack) videoTrack.stop();
-    if (audioTrack) audioTrack.stop();
+    if (videoTrackRef.current) videoTrackRef.current.stop();
+    if (audioTrackRef.current) audioTrackRef.current.stop();
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
@@ -366,10 +368,6 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
           </div>
         </div>
 
-        {/* Footer */}
-        <p className="text-center text-zinc-600 text-xs mt-6">
-          Powered by LiveKit
-        </p>
       </div>
     </div>
   );

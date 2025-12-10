@@ -4,8 +4,9 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { UserMenu } from "@/components/auth/user-menu";
 import { ModeToggle } from "@/components/mode-toggle";
+import { MainNav } from "@/components/layouts/main-nav";
 
-export default async function RecordingsLayout({
+export default async function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -26,26 +27,7 @@ export default async function RecordingsLayout({
               <Link href="/" className="text-xl font-bold text-primary">
                 Video Chat
               </Link>
-              <nav className="hidden md:flex items-center gap-6">
-                <Link
-                  href="/dashboard"
-                  className="text-sm font-medium text-muted-foreground hover:text-primary transition"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/rooms"
-                  className="text-sm font-medium text-muted-foreground hover:text-primary transition"
-                >
-                  My Rooms
-                </Link>
-                <Link
-                  href="/recordings"
-                  className="text-sm font-medium text-primary"
-                >
-                  Recordings
-                </Link>
-              </nav>
+              <MainNav />
             </div>
             <div className="flex items-center gap-2">
               <ModeToggle />

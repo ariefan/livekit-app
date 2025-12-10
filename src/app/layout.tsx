@@ -35,15 +35,6 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {/* Background image */}
-          <div
-            className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
-            style={{
-              backgroundImage: "url('/background.jpg')"
-            }}
-          />
-          <div className="fixed inset-0 -z-10 bg-background/90 dark:bg-background/95" />
-
           <AuthSessionProvider>{children}</AuthSessionProvider>
         </ThemeProvider>
       </body>

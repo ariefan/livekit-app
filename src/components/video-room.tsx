@@ -46,11 +46,14 @@ import { ParticipantsPanel } from "./participants-panel";
 import { FocusLayout } from "./focus-layout";
 import { CaptionsButton, CaptionsOverlay, useCaptions } from "./captions";
 import { AIAssistantPanel } from "./ai-assistant-panel";
+import { playSound, preloadSounds } from "@/lib/sounds";
 
 interface VideoRoomProps {
   token: string;
   roomName: string;
   onDisconnect: () => void;
+  initialAudio?: boolean;
+  initialVideo?: boolean;
 }
 
 interface VideoGridProps {
@@ -103,6 +106,12 @@ function VideoGrid({ focusedIdentity, onFocus, onUnfocus }: VideoGridProps) {
 type PanelType = "chat" | "participants" | "ai" | null;
 
 function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => void }) {
+  const handleLeave = () => {
+    playSound("leave", 0.5);
+    // Small delay to let sound start playing before disconnect
+    setTimeout(onLeave, 100);
+  };
+
   const [activePanel, setActivePanel] = useState<PanelType>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [lastMessageCount, setLastMessageCount] = useState(0);
@@ -112,6 +121,7 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
   const [focusedIdentity, setFocusedIdentity] = useState<string | null>(null);
   const [meetingTranscript, setMeetingTranscript] = useState<string>("");
   const [isRecording, setIsRecording] = useState(false);
+  const [isRecordingLoading, setIsRecordingLoading] = useState(false);
   const [egressId, setEgressId] = useState<string | null>(null);
   const [recordingError, setRecordingError] = useState<string | null>(null);
   const [showMobilePanel, setShowMobilePanel] = useState(false);
@@ -132,12 +142,20 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
   const isMicEnabled = localParticipant.isMicrophoneEnabled;
   const isCameraEnabled = localParticipant.isCameraEnabled;
 
+  // Preload sounds and play join sound on mount
+  useEffect(() => {
+    preloadSounds();
+    playSound("join");
+  }, []);
+
   useEffect(() => {
     if (activePanel === "chat") {
       setUnreadCount(0);
       setLastMessageCount(chatMessages.length);
     } else if (chatMessages.length > lastMessageCount) {
       setUnreadCount(chatMessages.length - lastMessageCount);
+      // Play chat sound when new message arrives and chat panel is closed
+      playSound("chat", 0.3);
     }
   }, [chatMessages.length, activePanel, lastMessageCount]);
 
@@ -160,6 +178,10 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
           const next = new Map(prev);
           if (data.raised) {
             next.set(data.participant, data.timestamp);
+            // Play hand raise sound when someone else raises their hand
+            if (data.participant !== localParticipant.identity) {
+              playSound("hand-raise", 0.4);
+            }
           } else {
             next.delete(data.participant);
           }
@@ -249,7 +271,10 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
   };
 
   const toggleRecording = async () => {
+    if (isRecordingLoading) return;
+
     setRecordingError(null);
+    setIsRecordingLoading(true);
 
     try {
       if (isRecording && egressId) {
@@ -267,6 +292,7 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
 
         setIsRecording(false);
         setEgressId(null);
+        playSound("record-stop", 0.5);
 
         // Broadcast recording stopped to all participants
         const encoder = new TextEncoder();
@@ -290,6 +316,7 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
 
         setIsRecording(true);
         setEgressId(data.egressId);
+        playSound("record-start", 0.5);
 
         // Broadcast recording started to all participants
         const encoder = new TextEncoder();
@@ -301,6 +328,8 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
     } catch (error) {
       console.error("Recording error:", error);
       setRecordingError(error instanceof Error ? error.message : "Recording failed");
+    } finally {
+      setIsRecordingLoading(false);
     }
   };
 
@@ -426,14 +455,20 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
               size="icon"
               className="hidden sm:flex h-10 w-10 relative"
               onClick={toggleRecording}
+              disabled={isRecordingLoading}
               title={isRecording ? "Stop Recording" : "Start Recording"}
             >
-              {isRecording ? (
+              {isRecordingLoading ? (
+                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : isRecording ? (
                 <Square className="h-4 w-4" />
               ) : (
                 <Circle className="h-4 w-4 md:h-5 md:w-5 fill-current" />
               )}
-              {isRecording && (
+              {isRecording && !isRecordingLoading && (
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full animate-pulse" />
               )}
             </Button>
@@ -502,9 +537,18 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
                   <MonitorUp className="h-4 w-4 mr-2" />
                   {isScreenSharing ? "Stop Sharing" : "Share Screen"}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={toggleRecording}>
-                  {isRecording ? <Square className="h-4 w-4 mr-2" /> : <Circle className="h-4 w-4 mr-2 fill-current" />}
-                  {isRecording ? "Stop Recording" : "Record"}
+                <DropdownMenuItem onClick={toggleRecording} disabled={isRecordingLoading}>
+                  {isRecordingLoading ? (
+                    <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : isRecording ? (
+                    <Square className="h-4 w-4 mr-2" />
+                  ) : (
+                    <Circle className="h-4 w-4 mr-2 fill-current" />
+                  )}
+                  {isRecordingLoading ? "Loading..." : isRecording ? "Stop Recording" : "Record"}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={toggleHandRaise}>
                   <Hand className="h-4 w-4 mr-2" />
@@ -541,7 +585,7 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
               variant="destructive"
               size="icon"
               className="h-10 w-10"
-              onClick={onLeave}
+              onClick={handleLeave}
             >
               <PhoneOff className="h-4 w-4 md:h-5 md:w-5" />
             </Button>
@@ -589,7 +633,7 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
   );
 }
 
-export function VideoRoom({ token, roomName, onDisconnect }: VideoRoomProps) {
+export function VideoRoom({ token, roomName, onDisconnect, initialAudio = true, initialVideo = true }: VideoRoomProps) {
   const serverUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL;
 
   return (
@@ -597,8 +641,8 @@ export function VideoRoom({ token, roomName, onDisconnect }: VideoRoomProps) {
       token={token}
       serverUrl={serverUrl}
       connect={true}
-      video={true}
-      audio={true}
+      video={initialVideo}
+      audio={initialAudio}
       onDisconnected={onDisconnect}
       data-lk-theme="default"
       className="h-screen overflow-hidden"

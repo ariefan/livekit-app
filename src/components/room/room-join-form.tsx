@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { VideoRoom } from "@/components/video-room";
+import { PreJoin } from "@/components/pre-join";
 
 interface RoomJoinFormProps {
   room: {
@@ -27,6 +28,12 @@ export function RoomJoinForm({ room, user, isOwner }: RoomJoinFormProps) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [token, setToken] = useState<string | null>(null);
+  const [showPreJoin, setShowPreJoin] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [videoEnabled, setVideoEnabled] = useState(true);
+
+  // Get the username to use
+  const username = user?.name || guestName;
 
   // If already joined, show video room (full screen, no padding)
   if (token) {
@@ -39,12 +46,59 @@ export function RoomJoinForm({ room, user, isOwner }: RoomJoinFormProps) {
             setToken(null);
             window.location.href = "/dashboard";
           }}
+          initialAudio={audioEnabled}
+          initialVideo={videoEnabled}
         />
       </div>
     );
   }
 
-  const handleJoin = async (e: React.FormEvent) => {
+  // Show pre-join screen after form validation
+  if (showPreJoin) {
+    return (
+      <PreJoin
+        username={username}
+        roomName={room.name}
+        onJoin={async (audio: boolean, video: boolean) => {
+          setAudioEnabled(audio);
+          setVideoEnabled(video);
+          setIsLoading(true);
+          setError("");
+
+          try {
+            const res = await fetch("/api/token", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                room: room.slug,
+                username,
+                roomPassword: room.hasPassword ? password : undefined,
+              }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+              setError(data.error || "Failed to join room");
+              setShowPreJoin(false);
+              return;
+            }
+
+            setToken(data.token);
+          } catch {
+            setError("An error occurred. Please try again.");
+            setShowPreJoin(false);
+          } finally {
+            setIsLoading(false);
+          }
+        }}
+        onBack={() => setShowPreJoin(false)}
+        isLoading={isLoading}
+      />
+    );
+  }
+
+  const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -54,32 +108,8 @@ export function RoomJoinForm({ room, user, isOwner }: RoomJoinFormProps) {
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      const res = await fetch("/api/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          room: room.slug,
-          username: user?.name || guestName,
-          roomPassword: room.hasPassword ? password : undefined,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Failed to join room");
-        return;
-      }
-
-      setToken(data.token);
-    } catch {
-      setError("An error occurred. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+    // Show pre-join screen
+    setShowPreJoin(true);
   };
 
   const isScheduledFuture =
@@ -103,7 +133,7 @@ export function RoomJoinForm({ room, user, isOwner }: RoomJoinFormProps) {
         )}
       </div>
 
-      <form onSubmit={handleJoin} className="space-y-4">
+      <form onSubmit={handleNext} className="space-y-4">
         {error && (
           <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
             {error}
@@ -155,7 +185,7 @@ export function RoomJoinForm({ room, user, isOwner }: RoomJoinFormProps) {
           disabled={isLoading}
           className="w-full py-3 px-4 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground font-medium rounded-lg transition"
         >
-          {isLoading ? "Joining..." : "Join Room"}
+          Next
         </button>
       </form>
 

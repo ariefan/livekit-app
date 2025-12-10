@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { JoinForm } from "@/components/join-form";
 import { PreJoin } from "@/components/pre-join";
@@ -18,10 +19,20 @@ interface JoinInfo {
 
 export default function Home() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [appState, setAppState] = useState<AppState>("join");
   const [joinInfo, setJoinInfo] = useState<JoinInfo | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [videoEnabled, setVideoEnabled] = useState(true);
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (status === "authenticated" && session) {
+      router.replace("/dashboard");
+    }
+  }, [status, session, router]);
 
   const handleFormSubmit = (room: string, username: string) => {
     setJoinInfo({ room, username });
@@ -32,9 +43,11 @@ export default function Home() {
     setAppState("join");
   };
 
-  const handleJoin = async () => {
+  const handleJoin = async (audio: boolean, video: boolean) => {
     if (!joinInfo) return;
 
+    setAudioEnabled(audio);
+    setVideoEnabled(video);
     setIsLoading(true);
     try {
       const response = await fetch("/api/token", {
@@ -68,7 +81,15 @@ export default function Home() {
   };
 
   if (appState === "room" && token && joinInfo) {
-    return <VideoRoom token={token} roomName={joinInfo.room} onDisconnect={handleDisconnect} />;
+    return (
+      <VideoRoom
+        token={token}
+        roomName={joinInfo.room}
+        onDisconnect={handleDisconnect}
+        initialAudio={audioEnabled}
+        initialVideo={videoEnabled}
+      />
+    );
   }
 
   if (appState === "preJoin" && joinInfo) {
@@ -84,7 +105,14 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen relative">
+      {/* Background image */}
+      <div
+        className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/background.jpg')" }}
+      />
+      <div className="fixed inset-0 -z-10 bg-background/75 dark:bg-background/80" />
+
       {/* Header */}
       <header className="absolute top-0 left-0 right-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
