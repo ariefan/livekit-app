@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -8,6 +8,7 @@ interface Recording {
   id: string;
   roomName: string;
   s3Key: string;
+  egressId: string;
   duration: number | null;
   size: number | null;
   status: string;
@@ -20,9 +21,39 @@ interface RecordingsListProps {
   recordings: Recording[];
 }
 
-export function RecordingsList({ recordings }: RecordingsListProps) {
+export function RecordingsList({ recordings: initialRecordings }: RecordingsListProps) {
+  const [recordings, setRecordings] = useState(initialRecordings);
   const [shareLinks, setShareLinks] = useState<Record<string, string>>({});
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
+  const [isStopping, setIsStopping] = useState<string | null>(null);
+
+  // Auto-cleanup: sync recording statuses with LiveKit on mount
+  useEffect(() => {
+    const hasRecordingStatus = initialRecordings.some((r) => r.status === "recording");
+    if (!hasRecordingStatus) return;
+
+    const cleanup = async () => {
+      try {
+        const res = await fetch("/api/recording", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "cleanup" }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.cleaned > 0) {
+            // Refresh the page to get updated statuses
+            window.location.reload();
+          }
+        }
+      } catch (e) {
+        console.error("Failed to cleanup recordings:", e);
+      }
+    };
+
+    cleanup();
+  }, [initialRecordings]);
 
   const formatDuration = (seconds: number | null) => {
     if (!seconds) return "—";
@@ -48,6 +79,34 @@ export function RecordingsList({ recordings }: RecordingsListProps) {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  const stopRecording = async (recordingId: string, egressId: string) => {
+    setIsStopping(recordingId);
+    try {
+      const res = await fetch("/api/recording", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "stop", egressId }),
+      });
+
+      if (res.ok) {
+        // Update local state to show completed status
+        setRecordings((prev) =>
+          prev.map((r) =>
+            r.id === recordingId ? { ...r, status: "completed" } : r
+          )
+        );
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to stop recording");
+      }
+    } catch (e) {
+      console.error("Failed to stop recording:", e);
+      alert("Failed to stop recording");
+    } finally {
+      setIsStopping(null);
+    }
   };
 
   const generateShareLink = async (recordingId: string) => {
@@ -159,6 +218,16 @@ export function RecordingsList({ recordings }: RecordingsListProps) {
               </td>
               <td className="px-6 py-4 text-right">
                 <div className="flex items-center justify-end gap-2">
+                  {recording.status === "recording" && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => stopRecording(recording.id, recording.egressId)}
+                      disabled={isStopping === recording.id}
+                    >
+                      {isStopping === recording.id ? "Stopping..." : "Stop"}
+                    </Button>
+                  )}
                   {recording.status === "completed" && (
                     <>
                       <Button

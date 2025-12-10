@@ -106,12 +106,6 @@ function VideoGrid({ focusedIdentity, onFocus, onUnfocus }: VideoGridProps) {
 type PanelType = "chat" | "participants" | "ai" | null;
 
 function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => void }) {
-  const handleLeave = () => {
-    playSound("leave", 0.5);
-    // Small delay to let sound start playing before disconnect
-    setTimeout(onLeave, 100);
-  };
-
   const [activePanel, setActivePanel] = useState<PanelType>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [lastMessageCount, setLastMessageCount] = useState(0);
@@ -141,6 +135,25 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
 
   const isMicEnabled = localParticipant.isMicrophoneEnabled;
   const isCameraEnabled = localParticipant.isCameraEnabled;
+
+  const handleLeave = async () => {
+    // Stop recording if active before leaving
+    if (isRecording && egressId) {
+      try {
+        await fetch("/api/recording", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "stop", egressId }),
+        });
+      } catch (e) {
+        console.error("Failed to stop recording on leave:", e);
+      }
+    }
+
+    playSound("leave", 0.5);
+    // Small delay to let sound start playing before disconnect
+    setTimeout(onLeave, 100);
+  };
 
   // Preload sounds and play join sound on mount
   useEffect(() => {

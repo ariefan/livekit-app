@@ -150,6 +150,65 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Cleanup: sync database status with actual LiveKit egress status
+    if (action === "cleanup") {
+      const session = await getServerSession(authOptions);
+      if (!session?.user.id) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      // Find all "recording" status recordings for this user
+      const activeRecordings = await db.query.recordings.findMany({
+        where: eq(recordings.ownerId, session.user.id),
+      });
+
+      const recordingStatusRecordings = activeRecordings.filter(
+        (r) => r.status === "recording"
+      );
+
+      let cleaned = 0;
+
+      for (const recording of recordingStatusRecordings) {
+        try {
+          // Check egress status from LiveKit
+          const egresses = await egressClient.listEgress({
+            egressId: recording.egressId,
+          });
+
+          const egress = egresses[0];
+
+          // If egress doesn't exist, has ended, or has failed - update status
+          if (!egress || egress.status >= 4) {
+            // EgressStatus: EGRESS_COMPLETE = 4, EGRESS_FAILED = 5
+            const newStatus = !egress || egress.status === 5 ? "failed" : "completed";
+
+            await db
+              .update(recordings)
+              .set({
+                status: newStatus,
+                updatedAt: new Date(),
+              })
+              .where(eq(recordings.egressId, recording.egressId));
+
+            cleaned++;
+          }
+        } catch (e) {
+          // If we can't find the egress, mark as failed
+          console.error(`Failed to check egress ${recording.egressId}:`, e);
+          await db
+            .update(recordings)
+            .set({
+              status: "failed",
+              updatedAt: new Date(),
+            })
+            .where(eq(recordings.egressId, recording.egressId));
+          cleaned++;
+        }
+      }
+
+      return NextResponse.json({ success: true, cleaned });
+    }
+
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });
   } catch (error) {
     console.error("Recording API error:", error);
