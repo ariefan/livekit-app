@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface Recording {
   id: string;
@@ -37,6 +39,17 @@ export function RecordingsList({ recordings }: RecordingsListProps) {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  const formatDateTime = (date: Date) => {
+    const d = new Date(date);
+    return d.toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   const generateShareLink = async (recordingId: string) => {
     setIsGenerating(recordingId);
     try {
@@ -56,10 +69,29 @@ export function RecordingsList({ recordings }: RecordingsListProps) {
     }
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "completed":
+        return (
+          <Badge className="bg-green-600 hover:bg-green-600 text-white">
+            {status}
+          </Badge>
+        );
+      case "recording":
+        return (
+          <Badge className="bg-blue-600 hover:bg-blue-600 text-white">
+            {status}
+          </Badge>
+        );
+      default:
+        return <Badge variant="destructive">{status}</Badge>;
+    }
+  };
+
   if (recordings.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
-        <div className="text-gray-400 dark:text-gray-500 mb-4">
+      <div className="bg-card rounded-lg border p-12 text-center">
+        <div className="text-muted-foreground mb-4">
           <svg
             className="w-16 h-16 mx-auto"
             fill="none"
@@ -75,7 +107,7 @@ export function RecordingsList({ recordings }: RecordingsListProps) {
           </svg>
         </div>
         <h3 className="text-lg font-medium mb-2">No recordings yet</h3>
-        <p className="text-gray-500 dark:text-gray-400">
+        <p className="text-muted-foreground">
           Start a meeting and record it to see your recordings here.
         </p>
       </div>
@@ -83,75 +115,65 @@ export function RecordingsList({ recordings }: RecordingsListProps) {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="bg-card rounded-lg border overflow-hidden">
       <table className="w-full">
-        <thead className="bg-gray-50 dark:bg-gray-900/50">
+        <thead className="bg-muted/50">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Room
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Duration
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Size
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Status
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Date
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Date & Time
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Actions
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+        <tbody className="divide-y divide-border">
           {recordings.map((recording) => (
-            <tr key={recording.id}>
+            <tr key={recording.id} className="hover:bg-muted/30">
               <td className="px-6 py-4">
                 <div className="font-medium">{recording.roomName}</div>
               </td>
-              <td className="px-6 py-4 text-sm text-gray-500">
+              <td className="px-6 py-4 text-sm text-muted-foreground">
                 {formatDuration(recording.duration)}
               </td>
-              <td className="px-6 py-4 text-sm text-gray-500">
+              <td className="px-6 py-4 text-sm text-muted-foreground">
                 {formatSize(recording.size)}
               </td>
               <td className="px-6 py-4">
-                <span
-                  className={`px-2 py-1 text-xs rounded-full ${
-                    recording.status === "completed"
-                      ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
-                      : recording.status === "recording"
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
-                        : "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400"
-                  }`}
-                >
-                  {recording.status}
-                </span>
+                {getStatusBadge(recording.status)}
               </td>
-              <td className="px-6 py-4 text-sm text-gray-500">
-                {new Date(recording.createdAt).toLocaleDateString()}
+              <td className="px-6 py-4 text-sm text-muted-foreground">
+                {formatDateTime(recording.createdAt)}
               </td>
               <td className="px-6 py-4 text-right">
                 <div className="flex items-center justify-end gap-2">
                   {recording.status === "completed" && (
                     <>
-                      <button
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => generateShareLink(recording.id)}
                         disabled={isGenerating === recording.id}
-                        className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition disabled:opacity-50"
                       >
                         {isGenerating === recording.id ? "..." : "Share"}
-                      </button>
-                      <a
-                        href={`/api/recordings/${recording.id}/download`}
-                        className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
-                      >
-                        Download
-                      </a>
+                      </Button>
+                      <Button size="sm" asChild>
+                        <a href={`/api/recordings/${recording.id}/download`}>
+                          Download
+                        </a>
+                      </Button>
                     </>
                   )}
                 </div>
