@@ -54,6 +54,7 @@ interface VideoRoomProps {
   onDisconnect: () => void;
   initialAudio?: boolean;
   initialVideo?: boolean;
+  isOwner?: boolean;
 }
 
 interface VideoGridProps {
@@ -105,7 +106,7 @@ function VideoGrid({ focusedIdentity, onFocus, onUnfocus }: VideoGridProps) {
 
 type PanelType = "chat" | "participants" | "ai" | null;
 
-function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => void }) {
+function RoomContent({ roomName, onLeave, isOwner = false }: { roomName: string; onLeave: () => void; isOwner?: boolean }) {
   const [activePanel, setActivePanel] = useState<PanelType>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [lastMessageCount, setLastMessageCount] = useState(0);
@@ -118,6 +119,8 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
   const [isRecordingLoading, setIsRecordingLoading] = useState(false);
   const [egressId, setEgressId] = useState<string | null>(null);
   const [recordingError, setRecordingError] = useState<string | null>(null);
+  const [isMicLoading, setIsMicLoading] = useState(false);
+  const [isCameraLoading, setIsCameraLoading] = useState(false);
   const [showMobilePanel, setShowMobilePanel] = useState(false);
   const { localParticipant } = useLocalParticipant();
 
@@ -228,12 +231,24 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
     setActivePanel(null);
   };
 
-  const toggleMic = () => {
-    localParticipant.setMicrophoneEnabled(!isMicEnabled);
+  const toggleMic = async () => {
+    if (isMicLoading) return;
+    setIsMicLoading(true);
+    try {
+      await localParticipant.setMicrophoneEnabled(!isMicEnabled);
+    } finally {
+      setIsMicLoading(false);
+    }
   };
 
-  const toggleCamera = () => {
-    localParticipant.setCameraEnabled(!isCameraEnabled);
+  const toggleCamera = async () => {
+    if (isCameraLoading) return;
+    setIsCameraLoading(true);
+    try {
+      await localParticipant.setCameraEnabled(!isCameraEnabled);
+    } finally {
+      setIsCameraLoading(false);
+    }
   };
 
   const toggleScreenShare = async () => {
@@ -385,8 +400,18 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
                 size="icon"
                 className="h-10 w-10 md:h-10 md:w-10"
                 onClick={toggleMic}
+                disabled={isMicLoading}
               >
-                {isMicEnabled ? <Mic className="h-4 w-4 md:h-5 md:w-5" /> : <MicOff className="h-4 w-4 md:h-5 md:w-5" />}
+                {isMicLoading ? (
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : isMicEnabled ? (
+                  <Mic className="h-4 w-4 md:h-5 md:w-5" />
+                ) : (
+                  <MicOff className="h-4 w-4 md:h-5 md:w-5" />
+                )}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -422,8 +447,18 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
                 size="icon"
                 className="h-10 w-10 md:h-10 md:w-10"
                 onClick={toggleCamera}
+                disabled={isCameraLoading}
               >
-                {isCameraEnabled ? <Video className="h-4 w-4 md:h-5 md:w-5" /> : <VideoOff className="h-4 w-4 md:h-5 md:w-5" />}
+                {isCameraLoading ? (
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : isCameraEnabled ? (
+                  <Video className="h-4 w-4 md:h-5 md:w-5" />
+                ) : (
+                  <VideoOff className="h-4 w-4 md:h-5 md:w-5" />
+                )}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -462,29 +497,31 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
               <MonitorUp className="h-4 w-4 md:h-5 md:w-5" />
             </Button>
 
-            {/* Record - hidden on small mobile */}
-            <Button
-              variant={isRecording ? "destructive" : "secondary"}
-              size="icon"
-              className="hidden sm:flex h-10 w-10 relative"
-              onClick={toggleRecording}
-              disabled={isRecordingLoading}
-              title={isRecording ? "Stop Recording" : "Start Recording"}
-            >
-              {isRecordingLoading ? (
-                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              ) : isRecording ? (
-                <Square className="h-4 w-4" />
-              ) : (
-                <Circle className="h-4 w-4 md:h-5 md:w-5 fill-current" />
-              )}
-              {isRecording && !isRecordingLoading && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full animate-pulse" />
-              )}
-            </Button>
+            {/* Record - only visible to room owner, hidden on small mobile */}
+            {isOwner && (
+              <Button
+                variant={isRecording ? "destructive" : "secondary"}
+                size="icon"
+                className="hidden sm:flex h-10 w-10 relative"
+                onClick={toggleRecording}
+                disabled={isRecordingLoading}
+                title={isRecording ? "Stop Recording" : "Start Recording"}
+              >
+                {isRecordingLoading ? (
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : isRecording ? (
+                  <Square className="h-4 w-4" />
+                ) : (
+                  <Circle className="h-4 w-4 md:h-5 md:w-5 fill-current" />
+                )}
+                {isRecording && !isRecordingLoading && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full animate-pulse" />
+                )}
+              </Button>
+            )}
 
             {/* Hand Raise - hidden on small mobile */}
             <Button
@@ -646,7 +683,7 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
   );
 }
 
-export function VideoRoom({ token, roomName, onDisconnect, initialAudio = true, initialVideo = true }: VideoRoomProps) {
+export function VideoRoom({ token, roomName, onDisconnect, initialAudio = true, initialVideo = true, isOwner = false }: VideoRoomProps) {
   const serverUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL;
 
   return (
@@ -660,7 +697,7 @@ export function VideoRoom({ token, roomName, onDisconnect, initialAudio = true, 
       data-lk-theme="default"
       className="h-screen overflow-hidden"
     >
-      <RoomContent roomName={roomName} onLeave={onDisconnect} />
+      <RoomContent roomName={roomName} onLeave={onDisconnect} isOwner={isOwner} />
       <RoomAudioRenderer />
     </LiveKitRoom>
   );

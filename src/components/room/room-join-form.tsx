@@ -48,6 +48,7 @@ export function RoomJoinForm({ room, user, isOwner }: RoomJoinFormProps) {
           }}
           initialAudio={audioEnabled}
           initialVideo={videoEnabled}
+          isOwner={isOwner}
         />
       </div>
     );
