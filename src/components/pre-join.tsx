@@ -204,20 +204,20 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
   };
 
   return (
-    <div className="h-screen overflow-auto flex items-center justify-center bg-zinc-950 p-4">
+    <div className="h-screen overflow-auto flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-white">Ready to join?</h1>
-          <p className="text-zinc-500 text-sm mt-1">
-            Check your camera and microphone before joining <span className="text-zinc-300 font-medium">{roomName}</span>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Ready to join?</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Check your camera and microphone before joining <span className="text-foreground font-medium">{roomName}</span>
           </p>
         </div>
 
         {/* Main Card */}
-        <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden shadow-xl">
-          {/* Video Preview */}
-          <div className="relative aspect-video bg-zinc-800">
+        <div className="bg-card rounded-2xl border overflow-hidden shadow-xl">
+          {/* Video Preview - keep dark for video contrast */}
+          <div className="relative aspect-video bg-black">
             {isVideoEnabled ? (
               <video
                 ref={videoRef}
@@ -227,9 +227,9 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="w-24 h-24 rounded-full bg-zinc-700 flex items-center justify-center">
-                  <span className="text-3xl font-semibold text-white">
+              <div className="w-full h-full flex items-center justify-center bg-muted">
+                <div className="w-24 h-24 rounded-full bg-muted-foreground/20 flex items-center justify-center">
+                  <span className="text-3xl font-semibold text-foreground">
                     {username.slice(0, 2).toUpperCase()}
                   </span>
                 </div>
@@ -252,8 +252,8 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
                 onClick={toggleAudio}
                 className={
                   isAudioEnabled
-                    ? "h-12 w-12 border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white"
-                    : "h-12 w-12 border-red-500/50 bg-red-500/20 hover:bg-red-500/30 text-red-400"
+                    ? "h-12 w-12"
+                    : "h-12 w-12 border-destructive/50 bg-destructive/10 hover:bg-destructive/20 text-destructive"
                 }
               >
                 {isAudioEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
@@ -265,8 +265,8 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
                 onClick={toggleVideo}
                 className={
                   isVideoEnabled
-                    ? "h-12 w-12 border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white"
-                    : "h-12 w-12 border-red-500/50 bg-red-500/20 hover:bg-red-500/30 text-red-400"
+                    ? "h-12 w-12"
+                    : "h-12 w-12 border-destructive/50 bg-destructive/10 hover:bg-destructive/20 text-destructive"
                 }
               >
                 {isVideoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
@@ -276,11 +276,11 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
             {/* Audio level meter */}
             {isAudioEnabled && (
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-zinc-500">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Microphone level</span>
                   <span>{Math.round(audioLevel)}%</span>
                 </div>
-                <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-green-500 to-green-400 transition-all duration-75"
                     style={{ width: `${audioLevel}%` }}
@@ -292,18 +292,14 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
             {/* Device selectors */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm text-zinc-400">Camera</label>
+                <label className="text-sm text-muted-foreground">Camera</label>
                 <Select value={selectedVideoDevice} onValueChange={setSelectedVideoDevice}>
-                  <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select camera" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-800 border-zinc-700">
+                  <SelectContent>
                     {videoDevices.map((device) => (
-                      <SelectItem
-                        key={device.deviceId}
-                        value={device.deviceId}
-                        className="text-zinc-200 focus:bg-zinc-700 focus:text-white"
-                      >
+                      <SelectItem key={device.deviceId} value={device.deviceId}>
                         {device.label || "Camera"}
                       </SelectItem>
                     ))}
@@ -312,18 +308,14 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm text-zinc-400">Microphone</label>
+                <label className="text-sm text-muted-foreground">Microphone</label>
                 <Select value={selectedAudioDevice} onValueChange={setSelectedAudioDevice}>
-                  <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select microphone" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-800 border-zinc-700">
+                  <SelectContent>
                     {audioDevices.map((device) => (
-                      <SelectItem
-                        key={device.deviceId}
-                        value={device.deviceId}
-                        className="text-zinc-200 focus:bg-zinc-700 focus:text-white"
-                      >
+                      <SelectItem key={device.deviceId} value={device.deviceId}>
                         {device.label || "Microphone"}
                       </SelectItem>
                     ))}
@@ -338,7 +330,7 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
                 variant="outline"
                 onClick={onBack}
                 disabled={isLoading}
-                className="flex-1 border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white"
+                className="flex-1"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back
@@ -347,7 +339,7 @@ export function PreJoin({ username, roomName, onJoin, onBack, isLoading }: PreJo
               <Button
                 onClick={handleJoin}
                 disabled={isLoading}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                className="flex-1"
               >
                 {isLoading ? (
                   <span className="flex items-center gap-2">

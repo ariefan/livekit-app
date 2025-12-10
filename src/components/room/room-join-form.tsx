@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { VideoRoom } from "@/components/video-room";
 import { PreJoin } from "@/components/pre-join";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Pencil } from "lucide-react";
 
 interface RoomJoinFormProps {
   room: {
@@ -23,7 +26,9 @@ interface RoomJoinFormProps {
 }
 
 export function RoomJoinForm({ room, user, isOwner }: RoomJoinFormProps) {
-  const [guestName, setGuestName] = useState("");
+  // Initialize display name from user's name or empty for guests
+  const [displayName, setDisplayName] = useState(user?.name || "");
+  const [isEditingName, setIsEditingName] = useState(!user); // Auto-edit mode for guests
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -33,7 +38,7 @@ export function RoomJoinForm({ room, user, isOwner }: RoomJoinFormProps) {
   const [videoEnabled, setVideoEnabled] = useState(true);
 
   // Get the username to use
-  const username = user?.name || guestName;
+  const username = displayName.trim() || user?.email || "Guest";
 
   // If already joined, show video room (full screen, no padding)
   if (token) {
@@ -103,8 +108,8 @@ export function RoomJoinForm({ room, user, isOwner }: RoomJoinFormProps) {
     e.preventDefault();
     setError("");
 
-    // Validate guest name if not authenticated
-    if (!user && !guestName.trim()) {
+    // Validate display name
+    if (!displayName.trim()) {
       setError("Please enter your name");
       return;
     }
@@ -141,29 +146,60 @@ export function RoomJoinForm({ room, user, isOwner }: RoomJoinFormProps) {
           </div>
         )}
 
-        {/* Guest name input (only for non-authenticated users) */}
-        {!user && (
-          <div>
-            <label className="block text-sm font-medium mb-2">Your Name</label>
-            <input
-              type="text"
-              value={guestName}
-              onChange={(e) => setGuestName(e.target.value)}
-              placeholder="Enter your name"
-              className="w-full px-4 py-3 rounded-lg border bg-background focus:ring-2 focus:ring-ring focus:border-transparent outline-none transition"
-            />
-          </div>
-        )}
-
-        {/* Show authenticated user info */}
-        {user && (
-          <div className="px-4 py-3 bg-muted rounded-lg">
-            <div className="text-sm text-muted-foreground">
-              Joining as
+        {/* Display name input - for all users */}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            {user ? "Display Name" : "Your Name"}
+          </label>
+          {user && !isEditingName ? (
+            // Show name with edit button for authenticated users
+            <div className="flex items-center gap-2">
+              <div className="flex-1 px-4 py-3 bg-muted rounded-lg">
+                <div className="font-medium">{displayName || user.email}</div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsEditingName(true)}
+                title="Edit name"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
             </div>
-            <div className="font-medium">{user.name || user.email}</div>
-          </div>
-        )}
+          ) : (
+            // Show input field for guests or when editing
+            <div className="flex items-center gap-2">
+              <Input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder={user ? user.name || user.email : "Enter your name"}
+                autoFocus={!user}
+              />
+              {user && isEditingName && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setIsEditingName(false);
+                    if (!displayName.trim()) {
+                      setDisplayName(user.name || "");
+                    }
+                  }}
+                >
+                  Done
+                </Button>
+              )}
+            </div>
+          )}
+          {user && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Signed in as {user.email}
+            </p>
+          )}
+        </div>
 
         {/* Password input (only if room has password) */}
         {room.hasPassword && (
@@ -171,23 +207,18 @@ export function RoomJoinForm({ room, user, isOwner }: RoomJoinFormProps) {
             <label className="block text-sm font-medium mb-2">
               Room Password
             </label>
-            <input
+            <Input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter room password"
-              className="w-full px-4 py-3 rounded-lg border bg-background focus:ring-2 focus:ring-ring focus:border-transparent outline-none transition"
             />
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full py-3 px-4 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground font-medium rounded-lg transition"
-        >
+        <Button type="submit" disabled={isLoading} className="w-full">
           Next
-        </button>
+        </Button>
       </form>
 
       <div className="mt-6 text-center text-sm text-muted-foreground">
