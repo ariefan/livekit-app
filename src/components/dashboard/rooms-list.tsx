@@ -5,7 +5,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Trash2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Copy, Trash2, Video, Calendar, Lock, Users } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
 
 interface Room {
   id: string;
@@ -24,6 +34,7 @@ interface RoomsListProps {
 
 export function RoomsList({ rooms }: RoomsListProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleDelete = async (roomId: string) => {
@@ -46,7 +57,7 @@ export function RoomsList({ rooms }: RoomsListProps) {
   const copyLink = (slug: string) => {
     const url = `${window.location.origin}/room/${slug}`;
     navigator.clipboard.writeText(url);
-    alert("Room link copied to clipboard!");
+    toast("Room link copied to clipboard!", "success");
   };
 
   const formatDateTime = (date: Date) => {
@@ -64,19 +75,7 @@ export function RoomsList({ rooms }: RoomsListProps) {
     return (
       <div className="bg-card rounded-lg border p-12 text-center">
         <div className="text-muted-foreground mb-4">
-          <svg
-            className="w-16 h-16 mx-auto"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-            />
-          </svg>
+          <Video className="w-16 h-16 mx-auto" strokeWidth={1.5} />
         </div>
         <h3 className="text-lg font-medium mb-2">No rooms yet</h3>
         <p className="text-muted-foreground">
@@ -87,77 +86,31 @@ export function RoomsList({ rooms }: RoomsListProps) {
   }
 
   return (
-    <div className="bg-card rounded-lg border overflow-hidden">
-      <table className="w-full">
-        <thead className="bg-muted/50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Room
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Status
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Created
-            </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {rooms.map((room) => (
-            <tr key={room.id} className="hover:bg-muted/30">
-              <td className="px-6 py-4">
-                <div>
-                  <div className="font-medium">{room.name}</div>
-                  <div className="text-sm text-muted-foreground font-mono">
+    <>
+      {/* Mobile card view */}
+      <div className="space-y-4 md:hidden">
+        {rooms.map((room) => (
+          <Card key={room.id}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-medium truncate">{room.name}</h3>
+                  <p className="text-sm text-muted-foreground font-mono truncate">
                     {room.slug}
-                  </div>
+                  </p>
                 </div>
-              </td>
-              <td className="px-6 py-4">
-                <div className="flex flex-wrap gap-2">
-                  {room.isScheduled && room.scheduledAt && (
-                    <Badge className="bg-purple-600 hover:bg-purple-600 text-white">
-                      {formatDateTime(room.scheduledAt)}
-                    </Badge>
-                  )}
-                  <Badge
-                    className={
-                      room.allowGuests
-                        ? "bg-green-600 hover:bg-green-600 text-white"
-                        : "bg-yellow-600 hover:bg-yellow-600 text-white"
-                    }
-                  >
-                    {room.allowGuests ? "Guests allowed" : "Members only"}
-                  </Badge>
-                  {room.password && (
-                    <Badge variant="secondary">
-                      Password protected
-                    </Badge>
-                  )}
-                </div>
-              </td>
-              <td className="px-6 py-4 text-sm text-muted-foreground">
-                {formatDateTime(room.createdAt)}
-              </td>
-              <td className="px-6 py-4 text-right">
-                <div className="flex items-center justify-end gap-2">
+                <div className="flex items-center gap-1 shrink-0">
                   <Button
                     variant="ghost"
-                    size="icon"
+                    size="icon-sm"
                     onClick={() => copyLink(room.slug)}
                     title="Copy link"
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" asChild>
-                    <Link href={`/room/${room.slug}`}>Join</Link>
-                  </Button>
                   <Button
                     variant="ghost"
-                    size="icon"
+                    size="icon-sm"
                     onClick={() => handleDelete(room.id)}
                     disabled={deletingId === room.id}
                     className="text-destructive hover:text-destructive"
@@ -166,11 +119,122 @@ export function RoomsList({ rooms }: RoomsListProps) {
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 mb-3">
+                {room.isScheduled && room.scheduledAt && (
+                  <Badge className="bg-purple-600 hover:bg-purple-600 text-white text-xs">
+                    <Calendar className="h-3 w-3 mr-1" />
+                    {formatDateTime(room.scheduledAt)}
+                  </Badge>
+                )}
+                <Badge
+                  className={`text-xs ${
+                    room.allowGuests
+                      ? "bg-green-600 hover:bg-green-600 text-white"
+                      : "bg-yellow-600 hover:bg-yellow-600 text-white"
+                  }`}
+                >
+                  <Users className="h-3 w-3 mr-1" />
+                  {room.allowGuests ? "Guests" : "Members"}
+                </Badge>
+                {room.password && (
+                  <Badge variant="secondary" className="text-xs">
+                    <Lock className="h-3 w-3 mr-1" />
+                    Protected
+                  </Badge>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  {formatDateTime(room.createdAt)}
+                </span>
+                <Button size="sm" asChild>
+                  <Link href={`/room/${room.slug}`}>Join</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Desktop table view */}
+      <div className="hidden md:block bg-card rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead>Room</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rooms.map((room) => (
+              <TableRow key={room.id}>
+                <TableCell>
+                  <div>
+                    <div className="font-medium">{room.name}</div>
+                    <div className="text-sm text-muted-foreground font-mono">
+                      {room.slug}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-2">
+                    {room.isScheduled && room.scheduledAt && (
+                      <Badge className="bg-purple-600 hover:bg-purple-600 text-white">
+                        {formatDateTime(room.scheduledAt)}
+                      </Badge>
+                    )}
+                    <Badge
+                      className={
+                        room.allowGuests
+                          ? "bg-green-600 hover:bg-green-600 text-white"
+                          : "bg-yellow-600 hover:bg-yellow-600 text-white"
+                      }
+                    >
+                      {room.allowGuests ? "Guests allowed" : "Members only"}
+                    </Badge>
+                    {room.password && (
+                      <Badge variant="secondary">Password protected</Badge>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {formatDateTime(room.createdAt)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => copyLink(room.slug)}
+                      title="Copy link"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" asChild>
+                      <Link href={`/room/${room.slug}`}>Join</Link>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(room.id)}
+                      disabled={deletingId === room.id}
+                      className="text-destructive hover:text-destructive"
+                      title="Delete room"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   );
 }

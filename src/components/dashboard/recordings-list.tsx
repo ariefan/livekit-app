@@ -3,6 +3,17 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Film, Clock, HardDrive, Share2, Download, Trash2 } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
 
 interface Recording {
   id: string;
@@ -21,15 +32,19 @@ interface RecordingsListProps {
   recordings: Recording[];
 }
 
-export function RecordingsList({ recordings: initialRecordings }: RecordingsListProps) {
+export function RecordingsList({
+  recordings: initialRecordings,
+}: RecordingsListProps) {
+  const { toast } = useToast();
   const [recordings, setRecordings] = useState(initialRecordings);
-  const [shareLinks, setShareLinks] = useState<Record<string, string>>({});
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
-  const [isStopping, setIsStopping] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   // Auto-cleanup: sync recording statuses with LiveKit on mount
   useEffect(() => {
-    const hasRecordingStatus = initialRecordings.some((r) => r.status === "recording");
+    const hasRecordingStatus = initialRecordings.some(
+      (r) => r.status === "recording"
+    );
     if (!hasRecordingStatus) return;
 
     const cleanup = async () => {
@@ -81,31 +96,42 @@ export function RecordingsList({ recordings: initialRecordings }: RecordingsList
     });
   };
 
-  const stopRecording = async (recordingId: string, egressId: string) => {
-    setIsStopping(recordingId);
+  const formatDateTimeShort = (date: Date) => {
+    const d = new Date(date);
+    return d.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const deleteRecording = async (recordingId: string, roomName: string) => {
+    if (
+      !confirm(`Delete recording from "${roomName}"? This cannot be undone.`)
+    ) {
+      return;
+    }
+
+    setIsDeleting(recordingId);
     try {
-      const res = await fetch("/api/recording", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "stop", egressId }),
+      const res = await fetch(`/api/recordings/${recordingId}`, {
+        method: "DELETE",
       });
 
       if (res.ok) {
-        // Update local state to show completed status
-        setRecordings((prev) =>
-          prev.map((r) =>
-            r.id === recordingId ? { ...r, status: "completed" } : r
-          )
-        );
+        // Remove from local state
+        setRecordings((prev) => prev.filter((r) => r.id !== recordingId));
+        toast("Recording deleted", "success");
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to stop recording");
+        toast(data.error || "Failed to delete recording", "error");
       }
     } catch (e) {
-      console.error("Failed to stop recording:", e);
-      alert("Failed to stop recording");
+      console.error("Failed to delete recording:", e);
+      toast("Failed to delete recording", "error");
     } finally {
-      setIsStopping(null);
+      setIsDeleting(null);
     }
   };
 
@@ -119,9 +145,8 @@ export function RecordingsList({ recordings: initialRecordings }: RecordingsList
       if (res.ok) {
         const data = await res.json();
         const shareUrl = `${window.location.origin}/recording/${data.shareToken}`;
-        setShareLinks((prev) => ({ ...prev, [recordingId]: shareUrl }));
         navigator.clipboard.writeText(shareUrl);
-        alert("Share link copied to clipboard!");
+        toast("Share link copied to clipboard!", "success");
       }
     } finally {
       setIsGenerating(null);
@@ -151,19 +176,7 @@ export function RecordingsList({ recordings: initialRecordings }: RecordingsList
     return (
       <div className="bg-card rounded-lg border p-12 text-center">
         <div className="text-muted-foreground mb-4">
-          <svg
-            className="w-16 h-16 mx-auto"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-            />
-          </svg>
+          <Film className="w-16 h-16 mx-auto" strokeWidth={1.5} />
         </div>
         <h3 className="text-lg font-medium mb-2">No recordings yet</h3>
         <p className="text-muted-foreground">
@@ -174,83 +187,136 @@ export function RecordingsList({ recordings: initialRecordings }: RecordingsList
   }
 
   return (
-    <div className="bg-card rounded-lg border overflow-hidden">
-      <table className="w-full">
-        <thead className="bg-muted/50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Room
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Duration
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Size
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Status
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Date & Time
-            </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {recordings.map((recording) => (
-            <tr key={recording.id} className="hover:bg-muted/30">
-              <td className="px-6 py-4">
-                <div className="font-medium">{recording.roomName}</div>
-              </td>
-              <td className="px-6 py-4 text-sm text-muted-foreground">
-                {formatDuration(recording.duration)}
-              </td>
-              <td className="px-6 py-4 text-sm text-muted-foreground">
-                {formatSize(recording.size)}
-              </td>
-              <td className="px-6 py-4">
-                {getStatusBadge(recording.status)}
-              </td>
-              <td className="px-6 py-4 text-sm text-muted-foreground">
-                {formatDateTime(recording.createdAt)}
-              </td>
-              <td className="px-6 py-4 text-right">
-                <div className="flex items-center justify-end gap-2">
-                  {recording.status === "recording" && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => stopRecording(recording.id, recording.egressId)}
-                      disabled={isStopping === recording.id}
-                    >
-                      {isStopping === recording.id ? "Stopping..." : "Stop"}
-                    </Button>
-                  )}
-                  {recording.status === "completed" && (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => generateShareLink(recording.id)}
-                        disabled={isGenerating === recording.id}
-                      >
-                        {isGenerating === recording.id ? "..." : "Share"}
-                      </Button>
-                      <Button size="sm" asChild>
-                        <a href={`/api/recordings/${recording.id}/download`}>
-                          Download
-                        </a>
-                      </Button>
-                    </>
-                  )}
+    <>
+      {/* Mobile card view */}
+      <div className="space-y-4 md:hidden">
+        {recordings.map((recording) => (
+          <Card key={recording.id}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-medium truncate">{recording.roomName}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDateTimeShort(recording.createdAt)}
+                  </p>
                 </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+                {getStatusBadge(recording.status)}
+              </div>
+
+              <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
+                  {formatDuration(recording.duration)}
+                </span>
+                <span className="flex items-center gap-1">
+                  <HardDrive className="h-3.5 w-3.5" />
+                  {formatSize(recording.size)}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2">
+                {recording.status === "completed" && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => generateShareLink(recording.id)}
+                      disabled={isGenerating === recording.id}
+                    >
+                      <Share2 className="h-4 w-4 mr-1" />
+                      {isGenerating === recording.id ? "..." : "Share"}
+                    </Button>
+                    <Button size="sm" asChild>
+                      <a href={`/api/recordings/${recording.id}/download`}>
+                        <Download className="h-4 w-4 mr-1" />
+                        Download
+                      </a>
+                    </Button>
+                  </>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() =>
+                    deleteRecording(recording.id, recording.roomName)
+                  }
+                  disabled={isDeleting === recording.id}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Desktop table view */}
+      <div className="hidden md:block bg-card rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead>Room</TableHead>
+              <TableHead>Duration</TableHead>
+              <TableHead>Size</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Date & Time</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {recordings.map((recording) => (
+              <TableRow key={recording.id}>
+                <TableCell>
+                  <div className="font-medium">{recording.roomName}</div>
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {formatDuration(recording.duration)}
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {formatSize(recording.size)}
+                </TableCell>
+                <TableCell>{getStatusBadge(recording.status)}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {formatDateTime(recording.createdAt)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    {recording.status === "completed" && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => generateShareLink(recording.id)}
+                          disabled={isGenerating === recording.id}
+                        >
+                          {isGenerating === recording.id ? "..." : "Share"}
+                        </Button>
+                        <Button size="sm" asChild>
+                          <a href={`/api/recordings/${recording.id}/download`}>
+                            Download
+                          </a>
+                        </Button>
+                      </>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() =>
+                        deleteRecording(recording.id, recording.roomName)
+                      }
+                      disabled={isDeleting === recording.id}
+                    >
+                      {isDeleting === recording.id ? "..." : "Delete"}
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   );
 }

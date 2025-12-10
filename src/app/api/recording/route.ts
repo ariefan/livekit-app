@@ -55,23 +55,29 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Room name is required" }, { status: 400 });
       }
 
-      // Get session to determine owner
+      // Get session - must be logged in
       const session = await getServerSession(authOptions);
-
-      // Find room to get owner
-      const room = await db.query.rooms.findFirst({
-        where: eq(rooms.slug, roomName),
-      });
-
-      // Determine owner: session user, room owner, or null
-      const ownerId = session?.user.id || room?.ownerId || null;
-
-      if (!ownerId) {
+      if (!session?.user.id) {
         return NextResponse.json(
           { error: "Must be logged in to start recording" },
           { status: 401 }
         );
       }
+
+      // Find room to check ownership
+      const room = await db.query.rooms.findFirst({
+        where: eq(rooms.slug, roomName),
+      });
+
+      // Only room owner can start recording
+      if (room && room.ownerId !== session.user.id) {
+        return NextResponse.json(
+          { error: "Only the room owner can start recording" },
+          { status: 403 }
+        );
+      }
+
+      const ownerId = session.user.id;
 
       const s3Config = getS3Config();
       const timestamp = Date.now();
@@ -119,19 +125,52 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Egress ID is required" }, { status: 400 });
       }
 
+      // Get session - must be logged in
+      const session = await getServerSession(authOptions);
+      if (!session?.user.id) {
+        return NextResponse.json(
+          { error: "Must be logged in to stop recording" },
+          { status: 401 }
+        );
+      }
+
+      // Find the recording to check ownership
+      const recording = await db.query.recordings.findFirst({
+        where: eq(recordings.egressId, egressId),
+      });
+
+      // Only recording owner can stop
+      if (recording && recording.ownerId !== session.user.id) {
+        return NextResponse.json(
+          { error: "Only the recording owner can stop recording" },
+          { status: 403 }
+        );
+      }
+
       // Check egress status first before trying to stop
+      let duration: number | null = null;
+      let size: number | null = null;
+
       try {
         const egresses = await egressClient.listEgress({ egressId });
         const egress = egresses[0];
 
         // EgressStatus: EGRESS_COMPLETE = 4, EGRESS_FAILED = 5
         if (!egress || egress.status >= 4) {
-          // Already completed or failed - just update database
+          // Already completed or failed - extract duration/size if available
+          if (egress?.fileResults?.[0]) {
+            const file = egress.fileResults[0];
+            duration = file.duration ? Math.round(Number(file.duration) / 1_000_000_000) : null;
+            size = file.size ? Number(file.size) : null;
+          }
+
           const newStatus = !egress || egress.status === 5 ? "failed" : "completed";
           await db
             .update(recordings)
             .set({
               status: newStatus,
+              duration,
+              size,
               updatedAt: new Date(),
             })
             .where(eq(recordings.egressId, egressId));
@@ -140,27 +179,41 @@ export async function POST(request: NextRequest) {
         }
 
         // Still active - stop it
-        await egressClient.stopEgress(egressId);
+        const stoppedEgress = await egressClient.stopEgress(egressId);
+
+        // Extract duration and size from stopped egress
+        if (stoppedEgress?.fileResults?.[0]) {
+          const file = stoppedEgress.fileResults[0];
+          duration = file.duration ? Math.round(Number(file.duration) / 1_000_000_000) : null;
+          size = file.size ? Number(file.size) : null;
+        }
       } catch (e) {
         // If listEgress fails, try to stop anyway and update DB
         console.error("Error checking egress status:", e);
         try {
-          await egressClient.stopEgress(egressId);
+          const stoppedEgress = await egressClient.stopEgress(egressId);
+          if (stoppedEgress?.fileResults?.[0]) {
+            const file = stoppedEgress.fileResults[0];
+            duration = file.duration ? Math.round(Number(file.duration) / 1_000_000_000) : null;
+            size = file.size ? Number(file.size) : null;
+          }
         } catch {
           // If stop also fails, just update database
         }
       }
 
-      // Update recording status
+      // Update recording status with duration and size
       await db
         .update(recordings)
         .set({
           status: "completed",
+          duration,
+          size,
           updatedAt: new Date(),
         })
         .where(eq(recordings.egressId, egressId));
 
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ success: true, duration, size });
     }
 
     if (action === "status") {
@@ -212,10 +265,21 @@ export async function POST(request: NextRequest) {
             // EgressStatus: EGRESS_COMPLETE = 4, EGRESS_FAILED = 5
             const newStatus = !egress || egress.status === 5 ? "failed" : "completed";
 
+            // Extract duration and size if available
+            let duration: number | null = null;
+            let size: number | null = null;
+            if (egress?.fileResults?.[0]) {
+              const file = egress.fileResults[0];
+              duration = file.duration ? Math.round(Number(file.duration) / 1_000_000_000) : null;
+              size = file.size ? Number(file.size) : null;
+            }
+
             await db
               .update(recordings)
               .set({
                 status: newStatus,
+                duration,
+                size,
                 updatedAt: new Date(),
               })
               .where(eq(recordings.egressId, recording.egressId));
