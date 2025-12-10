@@ -30,6 +30,8 @@ import {
   Sparkles,
   Circle,
   Square,
+  MoreHorizontal,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
@@ -112,6 +114,7 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
   const [isRecording, setIsRecording] = useState(false);
   const [egressId, setEgressId] = useState<string | null>(null);
   const [recordingError, setRecordingError] = useState<string | null>(null);
+  const [showMobilePanel, setShowMobilePanel] = useState(false);
   const { localParticipant } = useLocalParticipant();
 
   const { isEnabled: captionsEnabled, captions, toggleCaptions, isSupported: captionsSupported } = useCaptions(
@@ -177,7 +180,17 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
       setUnreadCount(0);
       setLastMessageCount(chatMessages.length);
     }
-    setActivePanel(activePanel === panel ? null : panel);
+    const newPanel = activePanel === panel ? null : panel;
+    setActivePanel(newPanel);
+    // On mobile, show the panel drawer
+    if (newPanel && window.innerWidth < 768) {
+      setShowMobilePanel(true);
+    }
+  };
+
+  const closeMobilePanel = () => {
+    setShowMobilePanel(false);
+    setActivePanel(null);
   };
 
   const toggleMic = () => {
@@ -297,13 +310,13 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
       <div className="flex-1 flex flex-col min-h-0 relative">
         {/* Room Name Overlay */}
         <div className="absolute top-2 left-2 md:top-4 md:left-4 z-10 flex items-center gap-2">
-          <div className="bg-black/50 backdrop-blur-md px-4 py-2 rounded-lg">
-            <span className="text-white/90 text-sm font-medium">{roomName}</span>
+          <div className="bg-black/50 backdrop-blur-md px-3 py-1.5 md:px-4 md:py-2 rounded-lg">
+            <span className="text-white/90 text-xs md:text-sm font-medium">{roomName}</span>
           </div>
           {isRecording && (
-            <div className="bg-red-600 backdrop-blur-md px-3 py-2 rounded-lg flex items-center gap-2">
+            <div className="bg-red-600 backdrop-blur-md px-2 py-1.5 md:px-3 md:py-2 rounded-lg flex items-center gap-1.5 md:gap-2">
               <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-              <span className="text-white text-sm font-medium">Recording</span>
+              <span className="text-white text-xs md:text-sm font-medium">REC</span>
             </div>
           )}
         </div>
@@ -321,25 +334,26 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
         </div>
 
         {/* Bottom Control Bar */}
-        <div className="flex-shrink-0 py-4">
-          <div className="flex items-center justify-center gap-3">
+        <div className="flex-shrink-0 py-2 md:py-4 px-2">
+          <div className="flex items-center justify-center gap-1.5 md:gap-3 flex-wrap">
             {/* Mic Control */}
             <ButtonGroup>
               <Button
                 variant={isMicEnabled ? "secondary" : "destructive"}
                 size="icon"
+                className="h-10 w-10 md:h-10 md:w-10"
                 onClick={toggleMic}
               >
-                {isMicEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+                {isMicEnabled ? <Mic className="h-4 w-4 md:h-5 md:w-5" /> : <MicOff className="h-4 w-4 md:h-5 md:w-5" />}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant={isMicEnabled ? "secondary" : "destructive"}
                     size="icon"
-                    className="w-8"
+                    className="w-6 md:w-8 h-10"
                   >
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown className="h-3 w-3 md:h-4 md:w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="center" className="w-64">
@@ -364,18 +378,19 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
               <Button
                 variant={isCameraEnabled ? "secondary" : "destructive"}
                 size="icon"
+                className="h-10 w-10 md:h-10 md:w-10"
                 onClick={toggleCamera}
               >
-                {isCameraEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+                {isCameraEnabled ? <Video className="h-4 w-4 md:h-5 md:w-5" /> : <VideoOff className="h-4 w-4 md:h-5 md:w-5" />}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant={isCameraEnabled ? "secondary" : "destructive"}
                     size="icon"
-                    className="w-8"
+                    className="w-6 md:w-8 h-10"
                   >
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown className="h-3 w-3 md:h-4 md:w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="center" className="w-64">
@@ -395,58 +410,62 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
               </DropdownMenu>
             </ButtonGroup>
 
-            {/* Screen Share */}
+            {/* Screen Share - hidden on small mobile */}
             <Button
               variant={isScreenSharing ? "default" : "secondary"}
               size="icon"
+              className="hidden sm:flex h-10 w-10"
               onClick={toggleScreenShare}
             >
-              <MonitorUp className="h-5 w-5" />
+              <MonitorUp className="h-4 w-4 md:h-5 md:w-5" />
             </Button>
 
-            {/* Record */}
+            {/* Record - hidden on small mobile */}
             <Button
               variant={isRecording ? "destructive" : "secondary"}
               size="icon"
+              className="hidden sm:flex h-10 w-10 relative"
               onClick={toggleRecording}
-              className="relative"
               title={isRecording ? "Stop Recording" : "Start Recording"}
             >
               {isRecording ? (
                 <Square className="h-4 w-4" />
               ) : (
-                <Circle className="h-5 w-5 fill-current" />
+                <Circle className="h-4 w-4 md:h-5 md:w-5 fill-current" />
               )}
               {isRecording && (
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full animate-pulse" />
               )}
             </Button>
 
-            {/* Hand Raise */}
+            {/* Hand Raise - hidden on small mobile */}
             <Button
               variant={isHandRaised ? "default" : "secondary"}
               size="icon"
+              className="hidden sm:flex h-10 w-10"
               onClick={toggleHandRaise}
-              className={isHandRaised ? "bg-yellow-500 hover:bg-yellow-600 text-black" : ""}
+              style={isHandRaised ? { backgroundColor: '#eab308', color: 'black' } : {}}
             >
-              <Hand className="h-5 w-5" />
+              <Hand className="h-4 w-4 md:h-5 md:w-5" />
             </Button>
 
-            {/* Captions */}
+            {/* Captions - hidden on small mobile */}
             {captionsSupported && (
-              <CaptionsButton isActive={captionsEnabled} onClick={toggleCaptions} />
+              <div className="hidden sm:block">
+                <CaptionsButton isActive={captionsEnabled} onClick={toggleCaptions} />
+              </div>
             )}
 
-            <div className="w-px h-8 bg-border" />
+            <div className="hidden sm:block w-px h-8 bg-border" />
 
             {/* Chat Toggle */}
             <Button
               variant={activePanel === "chat" ? "default" : "secondary"}
               size="icon"
+              className="h-10 w-10 relative"
               onClick={() => togglePanel("chat")}
-              className="relative"
             >
-              <MessageSquare className="h-5 w-5" />
+              <MessageSquare className="h-4 w-4 md:h-5 md:w-5" />
               {unreadCount > 0 && activePanel !== "chat" && (
                 <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center font-bold">
                   {unreadCount > 9 ? "9+" : unreadCount}
@@ -458,23 +477,61 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
             <Button
               variant={activePanel === "participants" ? "default" : "secondary"}
               size="icon"
+              className="h-10 w-10 relative"
               onClick={() => togglePanel("participants")}
-              className="relative"
             >
-              <Users className="h-5 w-5" />
+              <Users className="h-4 w-4 md:h-5 md:w-5" />
               <span className="absolute -top-1 -right-1 bg-muted text-muted-foreground text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center font-medium">
                 {participants.length}
               </span>
             </Button>
 
-            {/* AI Assistant Toggle */}
+            {/* More options dropdown for mobile */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="sm:hidden h-10 w-10"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center">
+                <DropdownMenuItem onClick={toggleScreenShare}>
+                  <MonitorUp className="h-4 w-4 mr-2" />
+                  {isScreenSharing ? "Stop Sharing" : "Share Screen"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={toggleRecording}>
+                  {isRecording ? <Square className="h-4 w-4 mr-2" /> : <Circle className="h-4 w-4 mr-2 fill-current" />}
+                  {isRecording ? "Stop Recording" : "Record"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={toggleHandRaise}>
+                  <Hand className="h-4 w-4 mr-2" />
+                  {isHandRaised ? "Lower Hand" : "Raise Hand"}
+                </DropdownMenuItem>
+                {captionsSupported && (
+                  <DropdownMenuItem onClick={toggleCaptions}>
+                    <span className="mr-2 text-sm">CC</span>
+                    {captionsEnabled ? "Disable Captions" : "Enable Captions"}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => togglePanel("ai")}>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  AI Assistant
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* AI Assistant Toggle - hidden on mobile (in more menu) */}
             <Button
               variant={activePanel === "ai" ? "default" : "secondary"}
               size="icon"
+              className="hidden sm:flex h-10 w-10"
               onClick={() => togglePanel("ai")}
-              className={activePanel === "ai" ? "bg-purple-600 hover:bg-purple-700" : ""}
+              style={activePanel === "ai" ? { backgroundColor: '#9333ea' } : {}}
             >
-              <Sparkles className="h-5 w-5" />
+              <Sparkles className="h-4 w-4 md:h-5 md:w-5" />
             </Button>
 
             <div className="w-px h-8 bg-border" />
@@ -483,21 +540,50 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
             <Button
               variant="destructive"
               size="icon"
+              className="h-10 w-10"
               onClick={onLeave}
             >
-              <PhoneOff className="h-5 w-5" />
+              <PhoneOff className="h-4 w-4 md:h-5 md:w-5" />
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Side Panel */}
+      {/* Side Panel - Desktop */}
       {activePanel && (
         <aside className="hidden md:flex w-80 flex-shrink-0 border-l border-zinc-800 flex-col bg-zinc-900 overflow-hidden">
           {activePanel === "chat" && <ChatPanel />}
           {activePanel === "participants" && <ParticipantsPanel roomName={roomName} raisedHands={raisedHands} />}
           {activePanel === "ai" && <AIAssistantPanel transcript={meetingTranscript} />}
         </aside>
+      )}
+
+      {/* Mobile Panel Drawer */}
+      {showMobilePanel && activePanel && (
+        <div className="md:hidden fixed inset-0 z-50 bg-black/50" onClick={closeMobilePanel}>
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-zinc-900 rounded-t-2xl max-h-[70vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Drawer handle */}
+            <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+              <h3 className="font-semibold text-white">
+                {activePanel === "chat" && "Chat"}
+                {activePanel === "participants" && "Participants"}
+                {activePanel === "ai" && "AI Assistant"}
+              </h3>
+              <Button variant="ghost" size="icon" onClick={closeMobilePanel}>
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            {/* Panel content */}
+            <div className="flex-1 overflow-hidden">
+              {activePanel === "chat" && <ChatPanel />}
+              {activePanel === "participants" && <ParticipantsPanel roomName={roomName} raisedHands={raisedHands} />}
+              {activePanel === "ai" && <AIAssistantPanel transcript={meetingTranscript} />}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

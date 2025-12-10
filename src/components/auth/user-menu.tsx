@@ -80,14 +80,14 @@ export function UserMenu() {
               Dashboard
             </Link>
             <Link
-              href="/dashboard/rooms"
+              href="/rooms"
               onClick={() => setIsOpen(false)}
               className="block px-4 py-2 text-sm hover:bg-muted"
             >
               My Rooms
             </Link>
             <Link
-              href="/dashboard/recordings"
+              href="/recordings"
               onClick={() => setIsOpen(false)}
               className="block px-4 py-2 text-sm hover:bg-muted"
             >

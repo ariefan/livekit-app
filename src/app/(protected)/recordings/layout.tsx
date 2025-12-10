@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { UserMenu } from "@/components/auth/user-menu";
 import { ModeToggle } from "@/components/mode-toggle";
 
-export default async function DashboardLayout({
+export default async function RecordingsLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -41,7 +41,7 @@ export default async function DashboardLayout({
                 </Link>
                 <Link
                   href="/recordings"
-                  className="text-sm font-medium text-muted-foreground hover:text-primary transition"
+                  className="text-sm font-medium text-primary"
                 >
                   Recordings
                 </Link>

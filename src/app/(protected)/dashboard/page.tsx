@@ -67,7 +67,7 @@ export default async function DashboardPage() {
         <div className="px-6 py-4 border-b flex items-center justify-between">
           <h2 className="text-lg font-semibold">Recent Rooms</h2>
           <Link
-            href="/dashboard/rooms"
+            href="/rooms"
             className="text-sm text-primary hover:text-primary/80"
           >
             View all
@@ -117,7 +117,7 @@ export default async function DashboardPage() {
         <div className="px-6 py-4 border-b flex items-center justify-between">
           <h2 className="text-lg font-semibold">Recent Recordings</h2>
           <Link
-            href="/dashboard/recordings"
+            href="/recordings"
             className="text-sm text-primary hover:text-primary/80"
           >
             View all

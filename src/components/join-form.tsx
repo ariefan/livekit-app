@@ -173,7 +173,6 @@ export function JoinForm({ onJoin, isLoading, defaultUsername = "" }: JoinFormPr
           </div>
         </div>
       </div>
-      <p className="text-center text-muted-foreground/50 text-xs mt-6">Powered by LiveKit</p>
     </div>
   );
 }

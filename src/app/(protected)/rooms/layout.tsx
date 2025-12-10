@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { UserMenu } from "@/components/auth/user-menu";
 import { ModeToggle } from "@/components/mode-toggle";
 
-export default async function DashboardLayout({
+export default async function RoomsLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -35,7 +35,7 @@ export default async function DashboardLayout({
                 </Link>
                 <Link
                   href="/rooms"
-                  className="text-sm font-medium text-muted-foreground hover:text-primary transition"
+                  className="text-sm font-medium text-primary"
                 >
                   My Rooms
                 </Link>

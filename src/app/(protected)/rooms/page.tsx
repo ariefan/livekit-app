@@ -19,7 +19,7 @@ export default async function RoomsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">My Rooms</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-muted-foreground mt-1">
             Manage your meeting rooms
           </p>
         </div>
