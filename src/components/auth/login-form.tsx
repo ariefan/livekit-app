@@ -4,6 +4,8 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export function LoginForm() {
   const router = useRouter();
@@ -58,44 +60,38 @@ export function LoginForm() {
         )}
 
         <div className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-2">
+          <div className="space-y-2">
+            <label htmlFor="email" className="text-sm font-medium">
               Email
             </label>
-            <input
+            <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 rounded-lg border bg-background focus:ring-2 focus:ring-ring focus:border-transparent outline-none transition"
               placeholder="you@example.com"
             />
           </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium mb-2">
+          <div className="space-y-2">
+            <label htmlFor="password" className="text-sm font-medium">
               Password
             </label>
-            <input
+            <Input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-4 py-3 rounded-lg border bg-background focus:ring-2 focus:ring-ring focus:border-transparent outline-none transition"
               placeholder="••••••••"
             />
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full py-3 px-4 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground font-medium rounded-lg transition focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-        >
+        <Button type="submit" disabled={isLoading} className="w-full">
           {isLoading ? "Signing in..." : "Sign in"}
-        </button>
+        </Button>
       </form>
 
       <div className="relative">
@@ -109,12 +105,13 @@ export function LoginForm() {
         </div>
       </div>
 
-      <button
+      <Button
         onClick={handleGoogleSignIn}
         type="button"
-        className="w-full py-3 px-4 border rounded-lg font-medium hover:bg-muted transition flex items-center justify-center gap-3"
+        variant="outline"
+        className="w-full"
       >
-        <svg className="w-5 h-5" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
           <path
             fill="currentColor"
             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -133,7 +130,7 @@ export function LoginForm() {
           />
         </svg>
         Continue with Google
-      </button>
+      </Button>
 
       <p className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}
