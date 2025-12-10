@@ -16,6 +16,14 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_BUILD_VERSION: getGitHash(),
     NEXT_PUBLIC_BUILD_TIME: new Date().toISOString(),
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+    ],
+  },
 };
 
 export default nextConfig;
