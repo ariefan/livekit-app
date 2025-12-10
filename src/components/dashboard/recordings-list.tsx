@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Film, Clock, HardDrive, Share2, Download, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Recording {
   id: string;
@@ -36,6 +37,7 @@ export function RecordingsList({
   recordings: initialRecordings,
 }: RecordingsListProps) {
   const { toast } = useToast();
+  const { confirm } = useConfirm();
   const [recordings, setRecordings] = useState(initialRecordings);
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
@@ -107,11 +109,15 @@ export function RecordingsList({
   };
 
   const deleteRecording = async (recordingId: string, roomName: string) => {
-    if (
-      !confirm(`Delete recording from "${roomName}"? This cannot be undone.`)
-    ) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: "Delete Recording",
+      description: `Are you sure you want to delete the recording from "${roomName}"? This action cannot be undone.`,
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      variant: "destructive",
+    });
+
+    if (!confirmed) return;
 
     setIsDeleting(recordingId);
     try {

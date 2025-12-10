@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Copy, Trash2, Video, Calendar, Lock, Users } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Room {
   id: string;
@@ -35,10 +36,19 @@ interface RoomsListProps {
 export function RoomsList({ rooms }: RoomsListProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const { confirm } = useConfirm();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const handleDelete = async (roomId: string) => {
-    if (!confirm("Are you sure you want to delete this room?")) return;
+  const handleDelete = async (roomId: string, roomName: string) => {
+    const confirmed = await confirm({
+      title: "Delete Room",
+      description: `Are you sure you want to delete "${roomName}"? This action cannot be undone.`,
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      variant: "destructive",
+    });
+
+    if (!confirmed) return;
 
     setDeletingId(roomId);
     try {
@@ -111,7 +121,7 @@ export function RoomsList({ rooms }: RoomsListProps) {
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    onClick={() => handleDelete(room.id)}
+                    onClick={() => handleDelete(room.id, room.name)}
                     disabled={deletingId === room.id}
                     className="text-destructive hover:text-destructive"
                     title="Delete room"
@@ -221,7 +231,7 @@ export function RoomsList({ rooms }: RoomsListProps) {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleDelete(room.id)}
+                      onClick={() => handleDelete(room.id, room.name)}
                       disabled={deletingId === room.id}
                       className="text-destructive hover:text-destructive"
                       title="Delete room"
