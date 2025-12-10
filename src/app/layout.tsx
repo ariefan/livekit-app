@@ -35,11 +35,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {/* Background image - using CSS for reliability */}
+          {/* Background image */}
           <div
             className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
             style={{
-              backgroundImage: "url('https://images.unsplash.com/photo-1557804506-669a67965ba0?q=80&w=1974&auto=format&fit=crop')"
+              backgroundImage: "url('/background.jpg')"
             }}
           />
           <div className="fixed inset-0 -z-10 bg-background/90 dark:bg-background/95" />
