@@ -94,76 +94,86 @@ export function JoinForm({ onJoin, isLoading, defaultUsername = "" }: JoinFormPr
 
   return (
     <div className="w-full">
-      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 dark:border-zinc-800 p-6 shadow-xl">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="username" className="text-sm font-medium text-gray-700 dark:text-zinc-300">
-              Your Name
-            </label>
-            <Input
-              id="username"
-              type="text"
-              placeholder="Enter your name"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              disabled={isLoading}
-              required
-              className="bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white"
-            />
+      <div className="bg-card rounded-2xl border p-6 shadow-xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Left column - Input form */}
+          <div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="username" className="text-sm font-medium text-muted-foreground">
+                  Your Name
+                </label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="Enter your name"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  disabled={isLoading}
+                  required
+                  className="bg-background"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="room" className="text-sm font-medium text-muted-foreground">
+                  Room Name
+                </label>
+                <Input
+                  id="room"
+                  type="text"
+                  placeholder="Enter room name"
+                  value={room}
+                  onChange={(e) => setRoom(e.target.value)}
+                  disabled={isLoading}
+                  required
+                  className="bg-background"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2.5"
+                disabled={isLoading || !room.trim() || !username.trim()}
+              >
+                {isLoading ? "Joining..." : "Join Room"}
+              </Button>
+            </form>
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="room" className="text-sm font-medium text-gray-700 dark:text-zinc-300">
-              Room Name
-            </label>
-            <Input
-              id="room"
-              type="text"
-              placeholder="Enter room name"
-              value={room}
-              onChange={(e) => setRoom(e.target.value)}
-              disabled={isLoading}
-              required
-              className="bg-gray-50 dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white"
-            />
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5"
-            disabled={isLoading || !room.trim() || !username.trim()}
-          >
-            {isLoading ? "Joining..." : "Join Room"}
-          </Button>
-        </form>
-
-        {recentRooms.length > 0 && (
-          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-zinc-800">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-zinc-400 mb-3">Recent Rooms</h3>
-            <div className="space-y-2">
-              {recentRooms.map((r) => (
-                <div
-                  key={r.name}
-                  onClick={() => !isLoading && handleQuickJoin(r.name)}
-                  className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-zinc-800/50 hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer"
-                >
-                  <div>
-                    <span className="text-gray-900 dark:text-white text-sm font-medium">{r.name}</span>
-                    <p className="text-gray-500 dark:text-zinc-500 text-xs">{formatTime(r.lastJoined)}</p>
-                  </div>
-                  <button
-                    onClick={(e) => removeRoom(r.name, e)}
-                    className="text-gray-400 hover:text-red-500 p-1"
-                  >
-                    &times;
-                  </button>
+          {/* Right column - Recent rooms */}
+          <div className={recentRooms.length === 0 ? "hidden md:block" : ""}>
+            <div className="md:border-l md:pl-6 md:border-border h-full">
+              <h3 className="text-sm font-medium text-muted-foreground mb-3">Recent Rooms</h3>
+              {recentRooms.length > 0 ? (
+                <div className="space-y-2">
+                  {recentRooms.map((r) => (
+                    <div
+                      key={r.name}
+                      onClick={() => !isLoading && handleQuickJoin(r.name)}
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer"
+                    >
+                      <div>
+                        <span className="text-sm font-medium">{r.name}</span>
+                        <p className="text-muted-foreground text-xs">{formatTime(r.lastJoined)}</p>
+                      </div>
+                      <button
+                        onClick={(e) => removeRoom(r.name, e)}
+                        className="text-muted-foreground hover:text-destructive p-1"
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : (
+                <p className="text-sm text-muted-foreground/50">No recent rooms yet</p>
+              )}
             </div>
           </div>
-        )}
+        </div>
       </div>
-      <p className="text-center text-gray-400 dark:text-zinc-600 text-xs mt-6">Powered by LiveKit</p>
+      <p className="text-center text-muted-foreground/50 text-xs mt-6">Powered by LiveKit</p>
     </div>
   );
 }

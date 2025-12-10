@@ -114,7 +114,7 @@ export default function Home() {
 
       {/* Main content */}
       <main className="flex items-center justify-center min-h-screen pt-16">
-        <div className="w-full max-w-md px-4">
+        <div className="w-full max-w-2xl px-4">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold mb-2">Video Chat</h1>
             <p className="text-muted-foreground">
@@ -145,6 +145,13 @@ export default function Home() {
           )}
         </div>
       </main>
+
+      {/* Footer with build version */}
+      <footer className="absolute bottom-4 left-0 right-0 text-center">
+        <p className="text-xs text-muted-foreground/50">
+          Build {process.env.NEXT_PUBLIC_BUILD_VERSION || "dev"}
+        </p>
+      </footer>
     </div>
   );
 }
