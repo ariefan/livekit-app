@@ -326,38 +326,28 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
             {/* Mic Control */}
             <ButtonGroup>
               <Button
-                variant="outline"
+                variant={isMicEnabled ? "secondary" : "destructive"}
                 size="icon"
                 onClick={toggleMic}
-                className={
-                  isMicEnabled
-                    ? "border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white"
-                    : "border-red-500/50 bg-red-500/20 hover:bg-red-500/30 text-red-400"
-                }
               >
                 {isMicEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    variant="outline"
+                    variant={isMicEnabled ? "secondary" : "destructive"}
                     size="icon"
-                    className={cn(
-                      "w-8",
-                      isMicEnabled
-                        ? "border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white"
-                        : "border-red-500/50 bg-red-500/20 hover:bg-red-500/30 text-red-400"
-                    )}
+                    className="w-8"
                   >
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="center" className="w-64 bg-zinc-900 border-zinc-800">
+                <DropdownMenuContent align="center" className="w-64">
                   {audioDevices.map((device) => (
                     <DropdownMenuItem
                       key={device.deviceId}
                       onClick={() => selectAudioDevice(device.deviceId)}
-                      className="text-zinc-200 focus:bg-zinc-800 focus:text-white cursor-pointer"
+                      className="cursor-pointer"
                     >
                       <div className="flex items-center gap-2 w-full">
                         {selectedAudioDevice === device.deviceId && <Check className="h-4 w-4" />}
@@ -372,38 +362,28 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
             {/* Camera Control */}
             <ButtonGroup>
               <Button
-                variant="outline"
+                variant={isCameraEnabled ? "secondary" : "destructive"}
                 size="icon"
                 onClick={toggleCamera}
-                className={
-                  isCameraEnabled
-                    ? "border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white"
-                    : "border-red-500/50 bg-red-500/20 hover:bg-red-500/30 text-red-400"
-                }
               >
                 {isCameraEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    variant="outline"
+                    variant={isCameraEnabled ? "secondary" : "destructive"}
                     size="icon"
-                    className={cn(
-                      "w-8",
-                      isCameraEnabled
-                        ? "border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white"
-                        : "border-red-500/50 bg-red-500/20 hover:bg-red-500/30 text-red-400"
-                    )}
+                    className="w-8"
                   >
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="center" className="w-64 bg-zinc-900 border-zinc-800">
+                <DropdownMenuContent align="center" className="w-64">
                   {videoDevices.map((device) => (
                     <DropdownMenuItem
                       key={device.deviceId}
                       onClick={() => selectVideoDevice(device.deviceId)}
-                      className="text-zinc-200 focus:bg-zinc-800 focus:text-white cursor-pointer"
+                      className="cursor-pointer"
                     >
                       <div className="flex items-center gap-2 w-full">
                         {selectedVideoDevice === device.deviceId && <Check className="h-4 w-4" />}
@@ -417,29 +397,19 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
 
             {/* Screen Share */}
             <Button
-              variant="outline"
+              variant={isScreenSharing ? "default" : "secondary"}
               size="icon"
               onClick={toggleScreenShare}
-              className={
-                isScreenSharing
-                  ? "border-blue-500/50 bg-blue-600 hover:bg-blue-700 text-white"
-                  : "border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white"
-              }
             >
               <MonitorUp className="h-5 w-5" />
             </Button>
 
             {/* Record */}
             <Button
-              variant="outline"
+              variant={isRecording ? "destructive" : "secondary"}
               size="icon"
               onClick={toggleRecording}
-              className={cn(
-                "relative",
-                isRecording
-                  ? "border-red-500/50 bg-red-600 hover:bg-red-700 text-white"
-                  : "border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white"
-              )}
+              className="relative"
               title={isRecording ? "Stop Recording" : "Start Recording"}
             >
               {isRecording ? (
@@ -448,20 +418,16 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
                 <Circle className="h-5 w-5 fill-current" />
               )}
               {isRecording && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full animate-pulse" />
               )}
             </Button>
 
             {/* Hand Raise */}
             <Button
-              variant="outline"
+              variant={isHandRaised ? "default" : "secondary"}
               size="icon"
               onClick={toggleHandRaise}
-              className={
-                isHandRaised
-                  ? "border-yellow-500/50 bg-yellow-500 hover:bg-yellow-600 text-black"
-                  : "border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white"
-              }
+              className={isHandRaised ? "bg-yellow-500 hover:bg-yellow-600 text-black" : ""}
             >
               <Hand className="h-5 w-5" />
             </Button>
@@ -471,23 +437,18 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
               <CaptionsButton isActive={captionsEnabled} onClick={toggleCaptions} />
             )}
 
-            <div className="w-px h-8 bg-zinc-700" />
+            <div className="w-px h-8 bg-border" />
 
             {/* Chat Toggle */}
             <Button
-              variant="outline"
+              variant={activePanel === "chat" ? "default" : "secondary"}
               size="icon"
               onClick={() => togglePanel("chat")}
-              className={cn(
-                "relative",
-                activePanel === "chat"
-                  ? "border-blue-500/50 bg-blue-600 hover:bg-blue-700 text-white"
-                  : "border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white"
-              )}
+              className="relative"
             >
               <MessageSquare className="h-5 w-5" />
               {unreadCount > 0 && activePanel !== "chat" && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center font-bold">
+                <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center font-bold">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
@@ -495,44 +456,34 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
 
             {/* Participants Toggle */}
             <Button
-              variant="outline"
+              variant={activePanel === "participants" ? "default" : "secondary"}
               size="icon"
               onClick={() => togglePanel("participants")}
-              className={cn(
-                "relative",
-                activePanel === "participants"
-                  ? "border-blue-500/50 bg-blue-600 hover:bg-blue-700 text-white"
-                  : "border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white"
-              )}
+              className="relative"
             >
               <Users className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 bg-zinc-600 text-white text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center font-medium">
+              <span className="absolute -top-1 -right-1 bg-muted text-muted-foreground text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center font-medium">
                 {participants.length}
               </span>
             </Button>
 
             {/* AI Assistant Toggle */}
             <Button
-              variant="outline"
+              variant={activePanel === "ai" ? "default" : "secondary"}
               size="icon"
               onClick={() => togglePanel("ai")}
-              className={cn(
-                activePanel === "ai"
-                  ? "border-purple-500/50 bg-purple-600 hover:bg-purple-700 text-white"
-                  : "border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white"
-              )}
+              className={activePanel === "ai" ? "bg-purple-600 hover:bg-purple-700" : ""}
             >
               <Sparkles className="h-5 w-5" />
             </Button>
 
-            <div className="w-px h-8 bg-zinc-700" />
+            <div className="w-px h-8 bg-border" />
 
             {/* Leave Button */}
             <Button
-              variant="outline"
+              variant="destructive"
               size="icon"
               onClick={onLeave}
-              className="border-red-500/50 bg-red-600 hover:bg-red-700 text-white"
             >
               <PhoneOff className="h-5 w-5" />
             </Button>
@@ -550,10 +501,6 @@ function RoomContent({ roomName, onLeave }: { roomName: string; onLeave: () => v
       )}
     </div>
   );
-}
-
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(" ");
 }
 
 export function VideoRoom({ token, roomName, onDisconnect }: VideoRoomProps) {
