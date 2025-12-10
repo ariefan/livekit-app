@@ -33,24 +33,25 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* Background image */}
-        <div className="fixed inset-0 -z-10">
-          <Image
-            src={BACKGROUND_IMAGE}
-            alt=""
-            fill
-            className="object-cover opacity-10 dark:opacity-5"
-            priority
-          />
-          <div className="absolute inset-0 bg-background/80" />
-        </div>
-
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
+          {/* Background image - inside ThemeProvider for theme access */}
+          <div className="fixed inset-0 -z-10 overflow-hidden">
+            <Image
+              src={BACKGROUND_IMAGE}
+              alt=""
+              fill
+              className="object-cover"
+              priority
+              unoptimized
+            />
+            <div className="absolute inset-0 bg-background/90 dark:bg-background/95" />
+          </div>
+
           <AuthSessionProvider>{children}</AuthSessionProvider>
         </ThemeProvider>
       </body>
