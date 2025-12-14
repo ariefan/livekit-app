@@ -54,12 +54,5 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 CMD ["sh", "-c", "echo '🚀 Starting LiveKit App deployment...' && \
-  if [ -z \"$DATABASE_URL\" ]; then \
-    echo '⚠️  WARNING: DATABASE_URL is not set. Skipping migrations.'; \
-  else \
-    echo '📦 Running database migrations...' && \
-    yes | npx drizzle-kit push && \
-    echo '✅ Database migrations completed successfully!'; \
-  fi && \
   echo '🌐 Starting Next.js server...' && \
   exec node server.js"]
