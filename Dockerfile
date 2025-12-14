@@ -59,7 +59,7 @@ CMD ["sh", "-c", "echo '🚀 Starting LiveKit App deployment...' && \
     echo '⚠️  WARNING: DATABASE_URL is not set. Skipping migrations.'; \
   else \
     echo '📦 Running database migrations...' && \
-    npm run db:push && \
+    npx drizzle-kit push && \
     echo '✅ Database migrations completed successfully!'; \
   fi && \
   echo '🌐 Starting Next.js server...' && \
