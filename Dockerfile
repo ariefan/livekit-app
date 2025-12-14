@@ -20,6 +20,14 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_LIVEKIT_URL=wss://livekit-server.technosmart.id
 ENV NEXT_PUBLIC_LIVEKIT_URL=${NEXT_PUBLIC_LIVEKIT_URL}
 
+# Run migrations during build (safer and faster)
+ARG DATABASE_URL
+RUN if [ -n "$DATABASE_URL" ]; then \
+      echo '📦 Running database migrations at build time...' && \
+      yes | npx drizzle-kit push && \
+      echo '✅ Migrations completed!'; \
+    fi
+
 RUN npm run build
 
 # Production image
@@ -29,21 +37,12 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-# Copy files needed for database migrations
-COPY --from=builder --chown=nextjs:nodejs /app/drizzle.config.ts ./drizzle.config.ts
-COPY --from=builder --chown=nextjs:nodejs /app/src/db ./src/db
-COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
-
-# Copy all node_modules for drizzle-kit migrations
-# Note: This increases image size but ensures all dependencies are available
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 
 USER nextjs
 
@@ -52,13 +51,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["sh", "-c", "echo '🚀 Starting LiveKit App deployment...' && \
-  if [ -z \"$DATABASE_URL\" ]; then \
-    echo '⚠️  WARNING: DATABASE_URL is not set. Skipping migrations.'; \
-  else \
-    echo '📦 Running database migrations...' && \
-    yes | npx drizzle-kit push && \
-    echo '✅ Database migrations completed successfully!'; \
-  fi && \
-  echo '🌐 Starting Next.js server...' && \
-  exec node server.js"]
+CMD ["node", "server.js"]
