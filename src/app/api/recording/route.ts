@@ -111,6 +111,7 @@ export async function POST(request: NextRequest) {
         roomName: roomName,
         s3Key: filepath,
         status: "recording",
+        recordingStartedAt: new Date(),
       });
 
       return NextResponse.json({

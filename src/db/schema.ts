@@ -83,6 +83,7 @@ export const recordings = pgTable("recordings", {
   size: bigint("size", { mode: "number" }),
   chatLog: text("chat_log"), // JSON string of chat messages
   transcript: text("transcript"), // Meeting transcription from captions
+  recordingStartedAt: timestamp("recording_started_at"), // Actual recording start time for chat timestamp sync
   shareToken: text("share_token").unique(),
   shareExpires: timestamp("share_expires"),
   status: text("status").notNull().default("recording"),

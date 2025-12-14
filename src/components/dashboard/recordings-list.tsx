@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Film, Clock, HardDrive, Share2, Download, Trash2, ChevronDown, ChevronRight, MessageSquare, FileText } from "lucide-react";
+import { Film, Clock, HardDrive, Share2, Download, Trash2, ChevronDown, ChevronRight, MessageSquare, FileText, Play } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -304,6 +304,12 @@ export function RecordingsList({
                         <div className="flex items-center gap-2 flex-wrap">
                           {recording.status === "completed" && (
                             <>
+                              <Button size="sm" asChild>
+                                <a href={`/dashboard/recordings/${recording.id}/watch`}>
+                                  <Play className="h-4 w-4 mr-1" />
+                                  Watch
+                                </a>
+                              </Button>
                               <Button
                                 variant="outline"
                                 size="sm"

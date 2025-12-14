@@ -98,16 +98,24 @@ export default async function RecordingPage({ params }: RecordingPageProps) {
           </div>
         </div>
 
-        {downloadUrl ? (
+        <div className="flex flex-col gap-3">
           <a
-            href={downloadUrl}
+            href={`/recording/${token}/watch`}
             className="inline-block w-full py-3 px-4 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition"
           >
-            Download Recording
+            Watch Online
           </a>
-        ) : (
-          <div className="text-destructive">Failed to generate download link</div>
-        )}
+          {downloadUrl ? (
+            <a
+              href={downloadUrl}
+              className="inline-block w-full py-3 px-4 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-medium rounded-lg transition"
+            >
+              Download Recording
+            </a>
+          ) : (
+            <div className="text-destructive">Failed to generate download link</div>
+          )}
+        </div>
 
         <p className="mt-4 text-xs text-muted-foreground">
           This link expires on{" "}
