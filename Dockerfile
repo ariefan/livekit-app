@@ -36,6 +36,16 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copy files needed for database migrations
+COPY --from=builder --chown=nextjs:nodejs /app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder --chown=nextjs:nodejs /app/src/db ./src/db
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+
+# Copy drizzle-kit and required dependencies from node_modules
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules/drizzle-kit ./node_modules/drizzle-kit
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules/postgres ./node_modules/postgres
+
 USER nextjs
 
 EXPOSE 3000
@@ -43,4 +53,13 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "echo '🚀 Starting LiveKit App deployment...' && \
+  if [ -z \"$DATABASE_URL\" ]; then \
+    echo '⚠️  WARNING: DATABASE_URL is not set. Skipping migrations.'; \
+  else \
+    echo '📦 Running database migrations...' && \
+    npm run db:push && \
+    echo '✅ Database migrations completed successfully!'; \
+  fi && \
+  echo '🌐 Starting Next.js server...' && \
+  exec node server.js"]
