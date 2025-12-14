@@ -37,14 +37,14 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy minimal migration files from builder (which has all deps)
+# Copy files needed for database migrations
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle.config.ts ./drizzle.config.ts
 COPY --from=builder --chown=nextjs:nodejs /app/src/db ./src/db
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/drizzle-kit ./node_modules/drizzle-kit
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/postgres ./node_modules/postgres
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin ./node_modules/.bin
+
+# Copy all node_modules for drizzle-kit migrations
+# Note: This increases image size but ensures all dependencies are available
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 
 USER nextjs
 
@@ -53,4 +53,13 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["sh", "-c", "if [ -n \"$DATABASE_URL\" ]; then yes | npx drizzle-kit push 2>/dev/null || true; fi && exec node server.js"]
+CMD ["sh", "-c", "echo '🚀 Starting LiveKit App deployment...' && \
+  if [ -z \"$DATABASE_URL\" ]; then \
+    echo '⚠️  WARNING: DATABASE_URL is not set. Skipping migrations.'; \
+  else \
+    echo '📦 Running database migrations...' && \
+    yes | npx drizzle-kit push && \
+    echo '✅ Database migrations completed successfully!'; \
+  fi && \
+  echo '🌐 Starting Next.js server...' && \
+  exec node server.js"]
