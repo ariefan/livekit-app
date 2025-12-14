@@ -41,12 +41,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/drizzle.config.ts ./drizzle.confi
 COPY --from=builder --chown=nextjs:nodejs /app/src/db ./src/db
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 
-# Copy drizzle-kit and required dependencies from node_modules
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/drizzle-kit ./node_modules/drizzle-kit
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/postgres ./node_modules/postgres
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/esbuild ./node_modules/esbuild
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/.bin ./node_modules/.bin
+# Copy all node_modules for drizzle-kit migrations
+# Note: This increases image size but ensures all dependencies are available
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 
 USER nextjs
 
