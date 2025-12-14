@@ -20,17 +20,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_LIVEKIT_URL=wss://livekit-server.technosmart.id
 ENV NEXT_PUBLIC_LIVEKIT_URL=${NEXT_PUBLIC_LIVEKIT_URL}
 
-# Run migrations during build (safer and faster)
-ARG DATABASE_URL
-RUN if [ -n "$DATABASE_URL" ]; then \
-      echo '📦 Running database migrations at build time...' && \
-      yes | npx drizzle-kit push && \
-      echo '✅ Migrations completed!'; \
-    fi
-
 RUN npm run build
 
-# Production image
+# Production image with minimal dependencies for migrations
 FROM base AS runner
 WORKDIR /app
 
@@ -44,6 +36,14 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copy only migration essentials (not full node_modules)
+COPY --from=builder --chown=nextjs:nodejs /app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder --chown=nextjs:nodejs /app/src/db ./src/db
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+
+# Install only drizzle-kit for migrations (production + drizzle-kit)
+RUN npm install --omit=dev drizzle-kit@0.31.0 drizzle-orm@0.36.4 postgres@3.4.5
+
 USER nextjs
 
 EXPOSE 3000
@@ -51,4 +51,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "if [ -n \"$DATABASE_URL\" ]; then yes | npx drizzle-kit push 2>/dev/null || true; fi && exec node server.js"]
