@@ -306,11 +306,23 @@ function RoomContent({ roomName, onLeave, isOwner = false }: { roomName: string;
 
     try {
       if (isRecording && egressId) {
-        // Stop recording
+        // Prepare chat log
+        const chatLog = chatMessages.map((msg) => ({
+          from: msg.from?.identity || "Unknown",
+          message: msg.message,
+          timestamp: msg.timestamp,
+        }));
+
+        // Stop recording with chat and transcript data
         const response = await fetch("/api/recording", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "stop", egressId }),
+          body: JSON.stringify({
+            action: "stop",
+            egressId,
+            chatLog: JSON.stringify(chatLog),
+            transcript: meetingTranscript,
+          }),
         });
 
         if (!response.ok) {
@@ -644,13 +656,17 @@ function RoomContent({ roomName, onLeave, isOwner = false }: { roomName: string;
       </div>
 
       {/* Side Panel - Desktop */}
-      {activePanel && (
-        <aside className="hidden md:flex w-80 flex-shrink-0 border-l border-zinc-800 flex-col bg-zinc-900 overflow-hidden">
-          {activePanel === "chat" && <ChatPanel />}
-          {activePanel === "participants" && <ParticipantsPanel roomName={roomName} raisedHands={raisedHands} />}
-          {activePanel === "ai" && <AIAssistantPanel transcript={meetingTranscript} />}
-        </aside>
-      )}
+      <aside className={`${activePanel ? 'flex' : 'hidden'} hidden md:flex w-80 shrink-0 border-l border-zinc-800 flex-col bg-zinc-900 overflow-hidden`}>
+        <div className={activePanel === "chat" ? "flex flex-col h-full" : "hidden"}>
+          <ChatPanel />
+        </div>
+        <div className={activePanel === "participants" ? "flex flex-col h-full" : "hidden"}>
+          <ParticipantsPanel roomName={roomName} raisedHands={raisedHands} />
+        </div>
+        <div className={activePanel === "ai" ? "flex flex-col h-full" : "hidden"}>
+          <AIAssistantPanel transcript={meetingTranscript} />
+        </div>
+      </aside>
 
       {/* Mobile Panel Drawer */}
       {showMobilePanel && activePanel && (
@@ -670,11 +686,15 @@ function RoomContent({ roomName, onLeave, isOwner = false }: { roomName: string;
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            {/* Panel content */}
-            <div className="flex-1 overflow-hidden">
-              {activePanel === "chat" && <ChatPanel />}
-              {activePanel === "participants" && <ParticipantsPanel roomName={roomName} raisedHands={raisedHands} />}
-              {activePanel === "ai" && <AIAssistantPanel transcript={meetingTranscript} />}
+            {/* Panel content - keep all mounted */}
+            <div className={`flex-1 overflow-hidden ${activePanel === "chat" ? "" : "hidden"}`}>
+              <ChatPanel />
+            </div>
+            <div className={`flex-1 overflow-hidden ${activePanel === "participants" ? "" : "hidden"}`}>
+              <ParticipantsPanel roomName={roomName} raisedHands={raisedHands} />
+            </div>
+            <div className={`flex-1 overflow-hidden ${activePanel === "ai" ? "" : "hidden"}`}>
+              <AIAssistantPanel transcript={meetingTranscript} />
             </div>
           </div>
         </div>

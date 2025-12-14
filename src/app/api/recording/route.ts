@@ -42,7 +42,7 @@ function getS3Config(): S3Upload {
 
 export async function POST(request: NextRequest) {
   try {
-    const { action, roomName, egressId } = await request.json();
+    const { action, roomName, egressId, chatLog, transcript } = await request.json();
 
     if (!action) {
       return NextResponse.json({ error: "Action is required" }, { status: 400 });
@@ -202,13 +202,15 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Update recording status with duration and size
+      // Update recording status with duration, size, chat log, and transcript
       await db
         .update(recordings)
         .set({
           status: "completed",
           duration,
           size,
+          chatLog: chatLog || null,
+          transcript: transcript || null,
           updatedAt: new Date(),
         })
         .where(eq(recordings.egressId, egressId));

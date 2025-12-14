@@ -77,9 +77,12 @@ export const recordings = pgTable("recordings", {
   ownerId: uuid("owner_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   egressId: text("egress_id").notNull(),
   roomName: text("room_name").notNull(),
+  sessionId: text("session_id"), // Groups recordings from the same session
   s3Key: text("s3_key").notNull(),
   duration: integer("duration"),
   size: bigint("size", { mode: "number" }),
+  chatLog: text("chat_log"), // JSON string of chat messages
+  transcript: text("transcript"), // Meeting transcription from captions
   shareToken: text("share_token").unique(),
   shareExpires: timestamp("share_expires"),
   status: text("status").notNull().default("recording"),
