@@ -42,7 +42,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/src/db ./src/db
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 
 # Install only drizzle-kit for migrations (production + drizzle-kit)
-RUN npm install --omit=dev drizzle-kit@0.31.0 drizzle-orm@0.36.4 postgres@3.4.5
+RUN npm install --omit=dev drizzle-kit@0.31.8 drizzle-orm@0.45.0 postgres@3.4.5
 
 USER nextjs
 
