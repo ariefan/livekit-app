@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { recordings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { VideoPlayerPage } from "@/components/video/video-player-page";
+import { ToastProvider } from "@/components/ui/toast";
 
 export default async function WatchRecordingPage({
   params,
@@ -24,8 +25,12 @@ export default async function WatchRecordingPage({
   });
 
   if (!recording || recording.ownerId !== session.user.id) {
-    redirect("/dashboard/recordings");
+    redirect("/recordings");
   }
 
-  return <VideoPlayerPage recordingId={id} />;
+  return (
+    <ToastProvider>
+      <VideoPlayerPage recordingId={id} />
+    </ToastProvider>
+  );
 }

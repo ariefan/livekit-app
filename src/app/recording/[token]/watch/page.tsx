@@ -3,6 +3,7 @@ import { recordings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { VideoPlayerPage } from "@/components/video/video-player-page";
+import { ToastProvider } from "@/components/ui/toast";
 
 export default async function PublicWatchRecordingPage({
   params,
@@ -26,10 +27,12 @@ export default async function PublicWatchRecordingPage({
   }
 
   return (
-    <VideoPlayerPage
-      recordingId={recording.id}
-      isPublic={true}
-      shareToken={token}
-    />
+    <ToastProvider>
+      <VideoPlayerPage
+        recordingId={recording.id}
+        isPublic={true}
+        shareToken={token}
+      />
+    </ToastProvider>
   );
 }
