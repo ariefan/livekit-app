@@ -31,7 +31,7 @@ export default async function ProtectedLayout({
                 <div className="flex items-center gap-4 md:gap-8">
                   <MobileNav />
                   <Link href="/" className="text-xl font-bold text-primary">
-                    Video Chat
+                    {process.env.NEXT_PUBLIC_APP_NAME || "Video Chat"}
                   </Link>
                   <MainNav />
                 </div>

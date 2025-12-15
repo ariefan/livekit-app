@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Video Chat",
+  title: process.env.NEXT_PUBLIC_APP_NAME || "Video Chat",
   description: "LiveKit video chat application",
 };
 

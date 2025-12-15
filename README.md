@@ -75,6 +75,9 @@ Open [http://localhost:3000](http://localhost:3000) to see the application.
 Create a `.env.local` file in the root directory with the following variables:
 
 ```env
+# Application
+NEXT_PUBLIC_APP_NAME=Video Chat
+
 # Database
 DATABASE_URL=postgresql://user:password@host:5432/database
 
@@ -111,7 +114,9 @@ For video streaming to work properly, you need to configure CORS on your S3 buck
 
 ### CORS Configuration JSON
 
-In your S3 bucket settings (or iDrive E2 bucket CORS configuration), add the following CORS policy:
+**IMPORTANT**: In iDrive E2, CORS configuration is set per-bucket, not per-region. You must navigate to your specific bucket (e.g., `livekit-uploads`) and configure CORS there.
+
+In your S3 bucket CORS settings, add the following policy:
 
 ```json
 [
@@ -130,14 +135,20 @@ In your S3 bucket settings (or iDrive E2 bucket CORS configuration), add the fol
     "ExposeHeaders": [
       "Content-Length",
       "Content-Type",
-      "ETag"
+      "ETag",
+      "Accept-Ranges",
+      "Content-Range",
+      "x-amz-request-id"
     ],
     "MaxAgeSeconds": 3600
   }
 ]
 ```
 
-**Important**: Replace `https://example.com` with your actual domain (e.g., `https://livekit.technosmart.id`).
+**Important**:
+- Replace `https://example.com` with your actual domain (e.g., `https://livekit.technosmart.id`)
+- Make sure to configure CORS on the **bucket itself**, not just the region
+- The `Accept-Ranges` and `Content-Range` headers are critical for video streaming
 
 ### Why CORS is Required
 

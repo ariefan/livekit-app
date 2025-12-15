@@ -117,7 +117,7 @@ export default function Home() {
       <header className="absolute top-0 left-0 right-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="text-xl font-bold text-primary">Video Chat</div>
+            <div className="text-xl font-bold text-primary">{process.env.NEXT_PUBLIC_APP_NAME || "Video Chat"}</div>
             <div className="flex items-center gap-2">
               <ModeToggle />
               {status === "loading" ? (
@@ -144,7 +144,7 @@ export default function Home() {
       <main className="flex items-center justify-center min-h-screen pt-16">
         <div className="w-full max-w-2xl px-4">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Video Chat</h1>
+            <h1 className="text-3xl font-bold mb-2">{process.env.NEXT_PUBLIC_APP_NAME || "Video Chat"}</h1>
             <p className="text-muted-foreground">
               {session
                 ? "Join a room or go to dashboard to create one"
