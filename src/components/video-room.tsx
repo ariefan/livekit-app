@@ -655,18 +655,20 @@ function RoomContent({ roomName, onLeave, isOwner = false }: { roomName: string;
         </div>
       </div>
 
-      {/* Side Panel - Desktop */}
-      <aside className={`${activePanel ? 'flex' : 'hidden'} hidden md:flex w-80 shrink-0 border-l border-zinc-800 flex-col bg-zinc-900 overflow-hidden`}>
-        <div className={activePanel === "chat" ? "flex flex-col h-full" : "hidden"}>
-          <ChatPanel />
-        </div>
-        <div className={activePanel === "participants" ? "flex flex-col h-full" : "hidden"}>
-          <ParticipantsPanel roomName={roomName} raisedHands={raisedHands} />
-        </div>
-        <div className={activePanel === "ai" ? "flex flex-col h-full" : "hidden"}>
-          <AIAssistantPanel transcript={meetingTranscript} />
-        </div>
-      </aside>
+      {/* Side Panel - Desktop (only visible when a panel is active) */}
+      {activePanel && (
+        <aside className="hidden md:flex w-80 shrink-0 border-l border-zinc-800 flex-col bg-zinc-900 overflow-hidden">
+          <div className={activePanel === "chat" ? "flex flex-col h-full" : "hidden"}>
+            <ChatPanel />
+          </div>
+          <div className={activePanel === "participants" ? "flex flex-col h-full" : "hidden"}>
+            <ParticipantsPanel roomName={roomName} raisedHands={raisedHands} />
+          </div>
+          <div className={activePanel === "ai" ? "flex flex-col h-full" : "hidden"}>
+            <AIAssistantPanel transcript={meetingTranscript} />
+          </div>
+        </aside>
+      )}
 
       {/* Mobile Panel Drawer */}
       {showMobilePanel && activePanel && (
