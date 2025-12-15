@@ -37,6 +37,7 @@ export async function GET(
     const accessKey = process.env.S3_ACCESS_KEY_ID;
     const secret = process.env.S3_SECRET_ACCESS_KEY;
     const bucket = process.env.S3_BUCKET;
+    const region = process.env.S3_REGION || "us-east-1";
 
     if (!endpoint || !accessKey || !secret || !bucket) {
       return NextResponse.json(
@@ -46,12 +47,13 @@ export async function GET(
     }
 
     const s3Client = new S3Client({
-      region: "auto",
+      region,
       endpoint: `https://${endpoint}`,
       credentials: {
         accessKeyId: accessKey,
         secretAccessKey: secret,
       },
+      forcePathStyle: true,
     });
 
     const command = new GetObjectCommand({

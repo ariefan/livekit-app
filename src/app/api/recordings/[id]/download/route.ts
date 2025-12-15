@@ -37,13 +37,15 @@ export async function GET(
 
     // Generate presigned URL for download
     const endpoint = process.env.S3_ENDPOINT;
+    const region = process.env.S3_REGION || "us-east-1";
     const s3Client = new S3Client({
-      region: "auto",
+      region,
       endpoint: endpoint?.startsWith("http") ? endpoint : `https://${endpoint}`,
       credentials: {
         accessKeyId: process.env.S3_ACCESS_KEY_ID!,
         secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
       },
+      forcePathStyle: true,
     });
 
     const command = new GetObjectCommand({
