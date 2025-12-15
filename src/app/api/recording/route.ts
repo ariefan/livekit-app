@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { EgressClient, EncodedFileOutput, S3Upload, EncodedFileType } from "livekit-server-sdk";
+import { EgressClient, EncodedFileOutput, S3Upload, EncodedFileType, EncodingOptionsPreset } from "livekit-server-sdk";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/db";
@@ -99,6 +99,9 @@ export async function POST(request: NextRequest) {
           layout: "grid",
           audioOnly: false,
           videoOnly: false,
+          // Use lowest quality preset for servers with limited CPU (2 vCPUs)
+          // H264_720P_30 is the lowest available preset (no 480p option exists)
+          encodingOptions: EncodingOptionsPreset.H264_720P_30,
         }
       );
 
