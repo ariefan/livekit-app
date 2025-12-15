@@ -305,7 +305,7 @@ export function RecordingsList({
                           {recording.status === "completed" && (
                             <>
                               <Button size="sm" asChild>
-                                <a href={`/dashboard/recordings/${recording.id}/watch`}>
+                                <a href={`/recordings/${recording.id}/watch`}>
                                   <Play className="h-4 w-4 mr-1" />
                                   Watch
                                 </a>
