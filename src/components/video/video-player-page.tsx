@@ -80,6 +80,8 @@ export function VideoPlayerPage({
       }
 
       const recordingData = await res.json();
+      console.log("Recording data fetched:", recordingData);
+      console.log("Video URL:", recordingData.videoUrl);
       setData(recordingData);
       setError(null);
     } catch (e) {
@@ -265,10 +267,13 @@ export function VideoPlayerPage({
               onEnded={() => setPlaying(false)}
               onError={(e) => {
                 console.error("Video error:", e);
+                console.error("Error type:", typeof e);
+                console.error("Error details:", JSON.stringify(e, null, 2));
                 toast("Failed to play video", "error");
               }}
               onReady={() => {
-                console.log("Video ready");
+                console.log("Video ready - ReactPlayer initialized successfully");
+                console.log("Video URL loaded:", data?.videoUrl);
               }}
             />
           </div>
@@ -303,7 +308,12 @@ export function VideoPlayerPage({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setPlaying(!playing)}
+                  onClick={() => {
+                    console.log("Play button clicked. Current playing state:", playing);
+                    console.log("Video URL:", data?.videoUrl);
+                    console.log("Duration:", duration);
+                    setPlaying(!playing);
+                  }}
                 >
                   {playing ? (
                     <Pause className="h-4 w-4" />

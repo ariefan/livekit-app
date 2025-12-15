@@ -41,7 +41,9 @@ export const VideoPlayer = forwardRef<any, VideoPlayerProps>(
                 attributes: {
                   controlsList: "nodownload",
                   disablePictureInPicture: false,
+                  crossOrigin: "anonymous",
                 },
+                forceVideo: true,
               },
             }}
           />
