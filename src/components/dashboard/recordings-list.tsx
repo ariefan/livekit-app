@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -275,10 +275,9 @@ export function RecordingsList({
         </TableHeader>
         <TableBody>
           {sessions.map((session) => (
-            <>
+            <Fragment key={session.sessionKey}>
               {/* Session Header Row */}
               <TableRow
-                key={`header-${session.sessionKey}`}
                 className="bg-muted/30 hover:bg-muted/40 cursor-pointer"
                 onClick={() => toggleSession(session.sessionKey)}
               >
@@ -305,8 +304,8 @@ export function RecordingsList({
               {/* Recording Rows */}
               {expandedSessions.has(session.sessionKey) &&
                 session.recordings.map((recording) => (
-                  <>
-                    <TableRow key={recording.id} className="group">
+                  <Fragment key={recording.id}>
+                    <TableRow className="group">
                       <TableCell className="py-2">
                         <div className="flex items-center gap-2 pl-6">
                           <Film className="h-3.5 w-3.5 text-muted-foreground" />
@@ -440,9 +439,9 @@ export function RecordingsList({
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </Fragment>
                 ))}
-            </>
+            </Fragment>
           ))}
         </TableBody>
       </Table>
