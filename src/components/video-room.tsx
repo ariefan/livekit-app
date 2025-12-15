@@ -140,13 +140,24 @@ function RoomContent({ roomName, onLeave, isOwner = false }: { roomName: string;
   const isCameraEnabled = localParticipant.isCameraEnabled;
 
   const handleLeave = async () => {
-    // Stop recording if active before leaving
+    // Stop recording if active before leaving - save chat and transcript
     if (isRecording && egressId) {
       try {
+        const chatLog = chatMessages.map((msg) => ({
+          from: msg.from?.identity || "Unknown",
+          message: msg.message,
+          timestamp: msg.timestamp,
+        }));
+
         await fetch("/api/recording", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "stop", egressId }),
+          body: JSON.stringify({
+            action: "stop",
+            egressId,
+            chatLog: JSON.stringify(chatLog),
+            transcript: meetingTranscript,
+          }),
         });
       } catch (e) {
         console.error("Failed to stop recording on leave:", e);

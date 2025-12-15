@@ -267,9 +267,9 @@ export function RecordingsList({
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead className="w-[180px]">Time</TableHead>
-            <TableHead className="w-[80px]">Duration</TableHead>
-            <TableHead className="w-[80px]">Size</TableHead>
-            <TableHead className="w-[80px]">Status</TableHead>
+            <TableHead className="w-20">Duration</TableHead>
+            <TableHead className="w-20">Size</TableHead>
+            <TableHead className="w-20">Status</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>

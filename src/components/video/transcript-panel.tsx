@@ -8,7 +8,11 @@ interface TranscriptPanelProps {
 }
 
 export function TranscriptPanel({ transcript }: TranscriptPanelProps) {
-  if (!transcript) {
+  console.log('TranscriptPanel - transcript:', transcript);
+  console.log('TranscriptPanel - transcript type:', typeof transcript);
+  console.log('TranscriptPanel - transcript length:', transcript?.length);
+
+  if (!transcript || transcript.trim() === '') {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center">
         <FileText className="h-12 w-12 text-muted-foreground mb-3 opacity-50" />

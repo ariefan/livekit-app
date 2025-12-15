@@ -25,7 +25,17 @@ export function ChatTimeline({
 }: ChatTimelineProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const messages: ChatMessage[] = chatLog ? JSON.parse(chatLog) : [];
+  console.log('ChatTimeline - chatLog:', chatLog);
+  console.log('ChatTimeline - chatLog type:', typeof chatLog);
+  console.log('ChatTimeline - chatLog length:', chatLog?.length);
+
+  let messages: ChatMessage[] = [];
+  try {
+    messages = chatLog ? JSON.parse(chatLog) : [];
+    console.log('ChatTimeline - parsed messages:', messages);
+  } catch (e) {
+    console.error('ChatTimeline - JSON parse error:', e);
+  }
 
   // Calculate relative video time for a chat timestamp
   const getVideoTime = (chatTimestamp: number): number => {

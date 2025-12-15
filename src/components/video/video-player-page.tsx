@@ -244,7 +244,7 @@ export function VideoPlayerPage({
           <p className="text-sm text-muted-foreground">Recording Playback</p>
         </div>
         <Button variant="ghost" size="sm" asChild>
-          <a href={isPublic ? `/recording/${shareToken}` : "/dashboard/recordings"}>
+          <a href={isPublic ? `/recording/${shareToken}` : "/recordings"}>
             Close
           </a>
         </Button>
