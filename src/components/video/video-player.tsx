@@ -1,7 +1,6 @@
 "use client";
 
-import { forwardRef, useState, useEffect } from "react";
-import ReactPlayer from "react-player";
+import { forwardRef, useRef, useEffect, useImperativeHandle } from "react";
 
 interface VideoPlayerProps {
   url: string;
@@ -17,74 +16,101 @@ interface VideoPlayerProps {
 
 export const VideoPlayer = forwardRef<any, VideoPlayerProps>(
   ({ url, playing, volume, playbackRate, onProgress, onDuration, onEnded, onError, onReady }, ref) => {
-    const Player = ReactPlayer as any;
-    const [nativeVideoError, setNativeVideoError] = useState<string | null>(null);
-    const [nativeVideoDuration, setNativeVideoDuration] = useState<number>(0);
+    const videoRef = useRef<HTMLVideoElement>(null);
 
-    // Test native video loading for CORS debugging
+    // Expose seekTo method for parent component
+    useImperativeHandle(ref, () => ({
+      seekTo: (time: number, type: string) => {
+        if (videoRef.current) {
+          videoRef.current.currentTime = time;
+        }
+      },
+    }));
+
+    // Handle playing state
     useEffect(() => {
-      if (url) {
-        const testVideo = document.createElement('video');
-        testVideo.crossOrigin = 'anonymous';
-        testVideo.src = url;
-
-        testVideo.onloadedmetadata = () => {
-          console.log('✅ Native video loaded successfully! Duration:', testVideo.duration);
-          setNativeVideoDuration(testVideo.duration);
-          setNativeVideoError(null);
-        };
-
-        testVideo.onerror = (e) => {
-          console.error('❌ Native video failed to load:', e);
-          console.error('This indicates a CORS issue with the S3 bucket');
-          setNativeVideoError('CORS error - check bucket CORS configuration');
-        };
+      if (videoRef.current) {
+        if (playing) {
+          videoRef.current.play().catch((e) => {
+            console.error('Error playing video:', e);
+            onError(e);
+          });
+        } else {
+          videoRef.current.pause();
+        }
       }
-    }, [url]);
+    }, [playing, onError]);
+
+    // Handle volume
+    useEffect(() => {
+      if (videoRef.current) {
+        videoRef.current.volume = volume;
+      }
+    }, [volume]);
+
+    // Handle playback rate
+    useEffect(() => {
+      if (videoRef.current) {
+        videoRef.current.playbackRate = playbackRate;
+      }
+    }, [playbackRate]);
+
+    // Handle video events
+    useEffect(() => {
+      const video = videoRef.current;
+      if (!video) return;
+
+      const handleLoadedMetadata = () => {
+        console.log('✅ Video metadata loaded! Duration:', video.duration);
+        onDuration(video.duration);
+        onReady();
+      };
+
+      const handleTimeUpdate = () => {
+        if (video.duration) {
+          const played = video.currentTime / video.duration;
+          onProgress({
+            played,
+            playedSeconds: video.currentTime,
+            loaded: video.buffered.length > 0 ? video.buffered.end(video.buffered.length - 1) / video.duration : 0,
+            loadedSeconds: video.buffered.length > 0 ? video.buffered.end(video.buffered.length - 1) : 0,
+          });
+        }
+      };
+
+      const handleEnded = () => {
+        onEnded();
+      };
+
+      const handleError = (e: Event) => {
+        console.error('Video error:', e);
+        onError(e);
+      };
+
+      video.addEventListener('loadedmetadata', handleLoadedMetadata);
+      video.addEventListener('timeupdate', handleTimeUpdate);
+      video.addEventListener('ended', handleEnded);
+      video.addEventListener('error', handleError);
+
+      return () => {
+        video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        video.removeEventListener('timeupdate', handleTimeUpdate);
+        video.removeEventListener('ended', handleEnded);
+        video.removeEventListener('error', handleError);
+      };
+    }, [onDuration, onProgress, onEnded, onError, onReady]);
 
     return (
       <div className="relative w-full bg-black" style={{ aspectRatio: "16/9" }}>
         {url ? (
-          <>
-            <Player
-              ref={ref}
-              url={url}
-              playing={playing}
-              volume={volume}
-              playbackRate={playbackRate}
-              onProgress={onProgress}
-              onDuration={onDuration}
-              onEnded={onEnded}
-              onError={onError}
-              onReady={onReady}
-              width="100%"
-              height="100%"
-              controls={false}
-              config={{
-                file: {
-                  attributes: {
-                    controlsList: "nodownload",
-                    disablePictureInPicture: false,
-                    crossOrigin: "anonymous",
-                  },
-                  forceVideo: true,
-                },
-              }}
-            />
-            {/* CORS Diagnostic Info */}
-            {nativeVideoError && (
-              <div className="absolute bottom-0 left-0 right-0 bg-red-500/90 text-white p-2 text-xs">
-                <strong>CORS Error:</strong> {nativeVideoError}
-                <br />
-                <small>Check iDrive E2 bucket CORS settings for: Accept-Ranges, Content-Range headers</small>
-              </div>
-            )}
-            {nativeVideoDuration > 0 && (
-              <div className="absolute top-0 right-0 bg-green-500/90 text-white p-1 text-xs">
-                Native: {nativeVideoDuration.toFixed(1)}s
-              </div>
-            )}
-          </>
+          <video
+            ref={videoRef}
+            src={url}
+            crossOrigin="anonymous"
+            className="w-full h-full"
+            preload="metadata"
+            playsInline
+          />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-muted-foreground">Loading video...</div>
